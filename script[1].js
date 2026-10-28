@@ -8,12 +8,11 @@
   "use strict";
 
   // 1) Replace these values with your own Appwrite project details.
-  const APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1"; // Use the endpoint shown in your Appwrite project.
-  const APPWRITE_PROJECT_ID = "PASTE_YOUR_PROJECT_ID_HERE";
-  const DATABASE_ID = "PASTE_YOUR_DATABASE_ID_HERE";
-  const MESSAGES_TABLE_ID = "messages"; // Public chat table.
-  const PRIVATE_FUNCTION_URL = "https://starter-function-pw9b.nyc.appwrite.run";
-
+ const APPWRITE_ENDPOINT = "https://nyc.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT_ID = "6ada4252003150fd4cdd";
+const DATABASE_ID = "genz-chat-db";
+const MESSAGES_TABLE_ID = "messages";
+const PRIVATE_FUNCTION_URL = "https://starter-function-pw9b.nyc.appwrite.run";
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const storageKey = "genzTeenChatLocalV1";
