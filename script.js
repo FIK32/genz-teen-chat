@@ -8,12 +8,11 @@
   "use strict";
 
   // 1) Replace these values with your own Appwrite project details.
-  
-const APPWRITE_ENDPOINT = "https://nyc.cloud.appwrite.io/v1";
-const APPWRITE_PROJECT_ID = "6ada4252003150fd4cdd";
-const DATABASE_ID = "genz-chat-db";
-const MESSAGES_TABLE_ID = "messages";
-
+  const APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1"; // Use the endpoint shown in your Appwrite project.
+  const APPWRITE_PROJECT_ID = "PASTE_YOUR_PROJECT_ID_HERE";
+  const DATABASE_ID = "PASTE_YOUR_DATABASE_ID_HERE";
+  const MESSAGES_TABLE_ID = "messages"; // Public chat table.
+  const PRIVATE_FUNCTION_URL = "https://starter-function-pw9b.nyc.appwrite.run";
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -25,6 +24,7 @@ const MESSAGES_TABLE_ID = "messages";
   let toastTimeout;
   let realtimeUnsubscribe = null;
   let appwriteReady = false;
+  let activePrivateUserId = "";
 
   const client = new Appwrite.Client();
   client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
@@ -77,6 +77,103 @@ const MESSAGES_TABLE_ID = "messages";
 
   function displayName(user = currentUser) {
     return (profile.name || user?.name || user?.email?.split("@")[0] || "Friend").slice(0, 30);
+  }
+
+  async function callPrivateApi(payload) {
+    if (!currentUser) throw new Error("Sign in first.");
+    const token = await account.createJWT();
+    const response = await fetch(PRIVATE_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-User-JWT": token.jwt,
+        "X-Appwrite-Project": APPWRITE_PROJECT_ID
+      },
+      body: JSON.stringify(payload)
+    });
+    let result;
+    try { result = await response.json(); } catch (_) { result = {}; }
+    if (!response.ok || !result.ok) throw new Error(result.error || `Private messaging request failed (${response.status}).`);
+    return result;
+  }
+
+  function renderPrivateMessages(messages) {
+    const target = $("#private-chat-feed");
+    if (!Array.isArray(messages) || !messages.length) {
+      target.innerHTML = `<div class="empty-state">No messages in this conversation yet. Say hello kindly.</div>`;
+      return;
+    }
+    target.innerHTML = messages.map((message) => {
+      const mine = message.senderId === currentUser?.$id;
+      const when = message.sentAt ? new Date(message.sentAt) : null;
+      const time = when && !Number.isNaN(when.getTime()) ? when.toLocaleString() : "";
+      return `<article class="private-message ${mine ? "mine" : "theirs"}"><div class="private-message-meta"><strong>${mine ? "You" : "Other member"}</strong><span>${escapeHTML(time)}</span></div><p>${escapeHTML(message.messageText || "")}</p></article>`;
+    }).join("");
+    target.scrollTop = target.scrollHeight;
+  }
+
+  async function loadPrivateConversation() {
+    if (!activePrivateUserId || !currentUser) return;
+    const feed = $("#private-chat-feed");
+    feed.innerHTML = `<div class="empty-state">Loading private messages…</div>`;
+    try {
+      const result = await callPrivateApi({ action: "list", otherUserId: activePrivateUserId });
+      renderPrivateMessages(result.messages);
+    } catch (error) {
+      feed.innerHTML = `<div class="empty-state">${escapeHTML(error.message || "Could not load this conversation.")}</div>`;
+    }
+  }
+
+  async function openPrivateConversation(event) {
+    event.preventDefault();
+    const otherId = $("#private-user-id").value.trim();
+    if (!otherId || otherId === currentUser?.$id) return showToast("Enter another member's User ID.");
+    activePrivateUserId = otherId;
+    $("#private-chat-title").textContent = `Member: ${otherId.slice(0, 14)}${otherId.length > 14 ? "…" : ""}`;
+    $("#private-conversation").classList.remove("hidden");
+    await loadPrivateConversation();
+  }
+
+  async function sendPrivateMessage(event) {
+    event.preventDefault();
+    const input = $("#private-message-input");
+    const messageText = input.value.trim();
+    if (!activePrivateUserId) return showToast("Open a conversation first.");
+    if (!messageText) return;
+    const button = $("#private-message-form button[type='submit']");
+    button.disabled = true;
+    try {
+      await callPrivateApi({ action: "send", receiverId: activePrivateUserId, messageText });
+      input.value = "";
+      await loadPrivateConversation();
+      showToast("Private message sent.");
+    } catch (error) {
+      showToast(error.message || "Private message was not sent.");
+    } finally { button.disabled = false; input.focus(); }
+  }
+
+  async function blockUserId(userId) {
+    const id = String(userId || "").trim();
+    if (!id || id === currentUser?.$id) return showToast("Enter another member's User ID.");
+    try {
+      await callPrivateApi({ action: "block", blockedId: id });
+      if (!localData.blocked.some((item) => item.toLowerCase() === id.toLowerCase())) localData.blocked.push(id);
+      saveLocalData(); renderBlocked();
+      showToast("User blocked. Private messaging between you is disabled.");
+      if (activePrivateUserId === id) {
+        $("#private-chat-feed").innerHTML = `<div class="empty-state">This conversation is unavailable because one user blocked the other.</div>`;
+      }
+    } catch (error) { showToast(error.message || "Could not block this user."); }
+  }
+
+  async function reportUserId(userId, reason = "Safety concern reported from private chat") {
+    const id = String(userId || "").trim();
+    if (!id || id === currentUser?.$id) return showToast("Choose another member to report.");
+    try {
+      await callPrivateApi({ action: "report", reportedUserId: id, reason });
+      showToast("Report submitted. A moderator dashboard still needs to be set up.");
+      addNotification("Your safety report was submitted.");
+    } catch (error) { showToast(error.message || "Could not submit the report."); }
   }
 
   function setAvatar(element, name, photo = "") {
@@ -193,7 +290,7 @@ const MESSAGES_TABLE_ID = "messages";
   function renderMessages(rows) {
     const feed = $("#chat-feed");
     const blocked = new Set(localData.blocked.map((n) => n.toLowerCase()));
-    const visibleRows = (rows || []).filter((row) => !blocked.has(String(row.senderName || "").toLowerCase()));
+    const visibleRows = (rows || []).filter((row) => !blocked.has(String(row.userId || "").toLowerCase()) && !blocked.has(String(row.senderName || "").toLowerCase()));
     if (!visibleRows.length) {
       feed.innerHTML = `<div class="empty-state">No messages yet. Be the first to say hello! 👋</div>`;
       return;
@@ -212,8 +309,8 @@ const MESSAGES_TABLE_ID = "messages";
           <div class="message-tools">
             <button type="button" data-react="💙" aria-label="React with heart">💙 React</button>
             <button type="button" data-react="😂" aria-label="React with laughing face">😂 React</button>
-            <button type="button" data-report-message="${escapeHTML(sender)}">🚩 Report</button>
-            ${mine ? `<button type="button" data-delete-message="${escapeHTML(row.$id || "")}">Delete</button>` : `<button type="button" data-block-message="${escapeHTML(sender)}">Block</button>`}
+            <button type="button" data-report-message="${escapeHTML(sender)}" data-report-user-id="${escapeHTML(row.userId || "")}">🚩 Report</button>
+            ${mine ? `<button type="button" data-delete-message="${escapeHTML(row.$id || "")}">Delete</button>` : `<button type="button" data-block-message="${escapeHTML(sender)}" data-block-user-id="${escapeHTML(row.userId || "")}">Block</button>`}
           </div>
         </div>
       </article>`;
@@ -322,7 +419,7 @@ const MESSAGES_TABLE_ID = "messages";
       target.innerHTML = `<div class="empty-state">No blocked names on this device.</div>`;
       return;
     }
-    target.innerHTML = localData.blocked.map((name) => `<div class="simple-row"><div class="message-avatar">🚫</div><div class="row-copy"><strong>${escapeHTML(name)}</strong><small>Hidden in this browser only</small></div><button type="button" data-unblock="${escapeHTML(name)}">Unblock</button></div>`).join("");
+    target.innerHTML = localData.blocked.map((name) => `<div class="simple-row"><div class="message-avatar">🚫</div><div class="row-copy"><strong>${escapeHTML(name)}</strong><small>Appwrite User ID · blocked</small></div><button type="button" data-unblock="${escapeHTML(name)}">Unblock</button></div>`).join("");
   }
 
   function changeView(view) {
@@ -347,27 +444,24 @@ const MESSAGES_TABLE_ID = "messages";
   }
 
   function blockName(name) {
-    const clean = String(name || "").trim().slice(0, 30);
-    if (!clean || clean.toLowerCase() === displayName().toLowerCase()) return showToast("Enter another display name.");
-    if (!localData.blocked.some((n) => n.toLowerCase() === clean.toLowerCase())) localData.blocked.push(clean);
-    saveLocalData();
-    renderBlocked();
-    loadPublicMessages();
-    showToast(`${clean} is hidden in this browser.`);
+    const clean = String(name || "").trim().slice(0, 128);
+    if (!clean || clean === currentUser?.$id) return showToast("Enter another member's Appwrite User ID.");
+    blockUserId(clean);
   }
 
-  function submitReport(event) {
+  async function submitReport(event) {
     event.preventDefault();
-    const name = $("#report-name").value.trim();
+    const userId = $("#report-name").value.trim();
     const reason = $("#report-reason").value;
     const details = $("#report-details").value.trim();
+    if (!userId) return showToast("Enter the reported member's Appwrite User ID.");
     if (!reason) return showToast("Choose a report reason.");
-    localData.reports.unshift({ name, reason, details, time: new Date().toISOString() });
-    localData.reports = localData.reports.slice(0, 50);
-    saveLocalData();
-    $("#report-form").reset();
-    addNotification("Your report was saved on this device only; no moderator was notified.");
-    showToast("Demo report saved locally. It has not been sent to a moderator.");
+    try {
+      await callPrivateApi({ action: "report", reportedUserId: userId, reason: `${reason}${details ? `: ${details}` : ""}` });
+      $("#report-form").reset();
+      addNotification("Your safety report was submitted.");
+      showToast("Report submitted. A moderator dashboard still needs to be set up.");
+    } catch (error) { showToast(error.message || "Could not submit report."); }
   }
 
   function saveProfile(event) {
@@ -393,6 +487,18 @@ const MESSAGES_TABLE_ID = "messages";
     $("#auth-form").addEventListener("submit", handleAuth);
     $("#signout-button").addEventListener("click", handleSignOut);
     $("#message-form").addEventListener("submit", sendMessage);
+    $("#private-open-form").addEventListener("submit", openPrivateConversation);
+    $("#private-message-form").addEventListener("submit", sendPrivateMessage);
+    $("#private-refresh").addEventListener("click", loadPrivateConversation);
+    $("#private-block-user").addEventListener("click", () => {
+      if (activePrivateUserId && confirm("Block this member? You will not be able to message each other.")) blockUserId(activePrivateUserId);
+    });
+    $("#private-report-user").addEventListener("click", () => {
+      if (activePrivateUserId) {
+        const reason = prompt("Briefly describe the concern (do not include private information):", "Bullying or harassment");
+        if (reason && reason.trim()) reportUserId(activePrivateUserId, reason.trim());
+      }
+    });
     $("#message-input").addEventListener("input", () => $("#char-count").textContent = `${$("#message-input").value.length} / 1000`);
     $("#refresh-chat").addEventListener("click", loadPublicMessages);
     $("#emoji-toggle").addEventListener("click", () => $("#emoji-picker").classList.toggle("hidden"));
@@ -435,12 +541,17 @@ const MESSAGES_TABLE_ID = "messages";
       const del = event.target.closest("[data-delete-message]");
       if (react) showToast(`You reacted ${react.dataset.react}. Reactions are demo-only for now.`);
       if (report) {
-        $("#report-name").value = report.dataset.reportMessage || "";
-        $("#report-reason").value = "Other safety concern";
-        changeView("safety");
-        showToast("Choose a reason and submit the report.");
+        const userId = report.dataset.reportUserId || "";
+        if (userId && userId !== currentUser?.$id) {
+          const reason = prompt("Briefly describe the safety concern (do not include private information):", "Bullying or harassment");
+          if (reason && reason.trim()) reportUserId(userId, reason.trim());
+          else showToast("Report cancelled.");
+        } else showToast("This message does not include a valid member ID to report.");
       }
-      if (block) blockName(block.dataset.blockMessage);
+      if (block) {
+        const userId = block.dataset.blockUserId || "";
+        if (userId) blockUserId(userId); else blockName(block.dataset.blockMessage);
+      }
       if (del) deleteMessage(del.dataset.deleteMessage);
     });
     $("#friends-list").addEventListener("click", (event) => {
@@ -453,10 +564,11 @@ const MESSAGES_TABLE_ID = "messages";
     $("#blocked-list").addEventListener("click", (event) => {
       const button = event.target.closest("[data-unblock]");
       if (!button) return;
-      localData.blocked = localData.blocked.filter((n) => n.toLowerCase() !== button.dataset.unblock.toLowerCase());
-      saveLocalData();
-      renderBlocked();
-      loadPublicMessages();
+      const id = button.dataset.unblock;
+      callPrivateApi({ action: "unblock", blockedId: id }).then(() => {
+        localData.blocked = localData.blocked.filter((n) => n.toLowerCase() !== id.toLowerCase());
+        saveLocalData(); renderBlocked(); showToast("User unblocked.");
+      }).catch((error) => showToast(error.message || "Could not unblock this user."));
     });
   }
 
