@@ -102,9 +102,20 @@
           </div>
 
           <div class="view-panel hidden" id="view-private">
-            <div class="panel-heading"><div><div class="eyebrow">ONE-TO-ONE</div><h2>Private messages</h2><p class="muted">Private messaging needs its own protected table before messages can be shared online.</p></div></div>
-            <div class="notice-card">🔒 Private messages are not sent to Appwrite by this starter. We will add them after setting up a messages table with recipient-based permissions. Don't use this panel to share sensitive information.</div>
-            <div class="private-demo"><div class="big-emoji">✉️</div><h3>Private chat is next</h3><p>We'll build this safely so only the sender and intended recipient can read a conversation.</p><button class="button button-quiet" type="button" data-view-jump="safety">Review safety tips</button></div>
+            <div class="panel-heading"><div><div class="eyebrow">ONE-TO-ONE</div><h2>Private messages</h2><p class="muted">Start a private conversation with another registered member.</p></div></div>
+            <div class="notice-card">🔒 Only the two conversation participants should be able to read these messages. Use the other member's Appwrite User ID. Do not send passwords, addresses, private photos, or other sensitive information.</div>
+            <form id="private-open-form" class="inline-form private-open-form">
+              <input id="private-user-id" maxlength="128" placeholder="Other member's Appwrite User ID" aria-label="Other member's Appwrite User ID" required>
+              <button class="button button-primary" type="submit">Open chat</button>
+            </form>
+            <p class="tiny muted">For now, enter the member's User ID exactly as shown in Appwrite. A public user directory has not been added.</p>
+            <section id="private-conversation" class="private-conversation hidden" aria-live="polite">
+              <div class="private-chat-heading"><div><div class="eyebrow">PRIVATE CONVERSATION</div><h3 id="private-chat-title">Conversation</h3></div><button id="private-refresh" class="button button-quiet" type="button">↻ Refresh</button></div>
+              <div id="private-chat-feed" class="private-chat-feed"><div class="empty-state">Open a conversation to see messages.</div></div>
+              <form id="private-message-form" class="composer private-composer"><input id="private-message-input" type="text" maxlength="2000" placeholder="Write a private message…" aria-label="Private message" required><button class="button button-primary" type="submit">Send ➤</button></form>
+              <div class="private-actions"><button id="private-block-user" class="button button-quiet" type="button">🚫 Block this user</button><button id="private-report-user" class="button button-quiet" type="button">🚩 Report this user</button></div>
+            </section>
+            <div class="notice-card">If someone pressures, threatens, or makes you uncomfortable, stop replying, block them, report the concern, and tell a trusted adult.</div>
           </div>
 
           <div class="view-panel hidden" id="view-notifications">
@@ -115,8 +126,8 @@
           <div class="view-panel hidden" id="view-safety">
             <div class="panel-heading"><div><div class="eyebrow">LOOK OUT FOR EACH OTHER</div><h2>Safety centre</h2><p class="muted">Tools and reminders to help keep the community respectful.</p></div></div>
             <div class="safety-grid">
-              <article class="safety-card"><div class="safety-icon">🚫</div><h3>Block a user</h3><p>Blocked names are hidden in this browser. Online blocking for every account needs a protected Appwrite table.</p><form id="block-form" class="stack-form"><input id="block-name" maxlength="30" placeholder="Display name to block" required><button class="button button-quiet" type="submit">Block name</button></form></article>
-              <article class="safety-card"><div class="safety-icon">🚩</div><h3>Report a concern</h3><p>Send a report to the local demo log. This does not alert a moderator yet.</p><form id="report-form" class="stack-form"><input id="report-name" maxlength="30" placeholder="User's display name (optional)"><select id="report-reason" required><option value="">Choose a reason</option><option>Bullying or harassment</option><option>Spam or scam</option><option>Inappropriate content</option><option>Privacy concern</option><option>Other safety concern</option></select><textarea id="report-details" maxlength="500" placeholder="Describe the concern (don't include private details)"></textarea><button class="button button-primary" type="submit">Submit report</button></form></article>
+              <article class="safety-card"><div class="safety-icon">🚫</div><h3>Block a user</h3><p>Use a member's Appwrite User ID to block them across your account.</p><form id="block-form" class="stack-form"><input id="block-name" maxlength="128" placeholder="Appwrite User ID to block" required><button class="button button-quiet" type="submit">Block user</button></form></article>
+              <article class="safety-card"><div class="safety-icon">🚩</div><h3>Report a concern</h3><p>Submit a report to the protected Appwrite reports table. A moderator dashboard still needs to be set up.</p><form id="report-form" class="stack-form"><input id="report-name" maxlength="30" placeholder="Reported member's Appwrite User ID"><select id="report-reason" required><option value="">Choose a reason</option><option>Bullying or harassment</option><option>Spam or scam</option><option>Inappropriate content</option><option>Privacy concern</option><option>Other safety concern</option></select><textarea id="report-details" maxlength="500" placeholder="Describe the concern (don't include private details)"></textarea><button class="button button-primary" type="submit">Submit report</button></form></article>
             </div>
             <div class="notice-card"><strong>Remember:</strong> Never meet an online-only contact alone, never send money or passwords, and tell a trusted adult if someone pressures, threatens, or makes you uncomfortable.</div>
             <h3 class="section-subtitle">Blocked names on this device</h3><div id="blocked-list" class="simple-list"></div>
