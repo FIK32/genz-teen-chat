@@ -35,3 +35,16 @@ input,textarea,select{width:100%;min-width:0;padding:12px 13px;color:var(--text)
 @media(max-width:900px){.auth-layout{grid-template-columns:1fr}.welcome-panel{min-height:360px}.workspace{grid-template-columns:1fr}.sidebar{position:static}.nav-menu{grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar-bottom{display:none}}
 @media(max-width:560px){.app-shell{width:min(calc(100% - 22px),1480px)}.topbar{min-height:65px}.brand{font-size:13px}.brand-mark{width:36px;height:36px}.status-pill{display:none}.auth-layout{padding-top:18px;gap:14px}.welcome-panel{min-height:auto;padding:25px 21px;border-radius:20px}.welcome-panel h1{font-size:39px}.auth-card{padding:21px}.workspace{padding-top:14px}.nav-menu{grid-template-columns:1fr 1fr}.nav-item{padding:10px 8px;font-size:12px}.panel-heading{align-items:flex-start;padding-top:21px}.panel-heading h2{font-size:24px}.view-panel{padding-right:15px;padding-left:15px}.inline-form{flex-direction:column;align-items:stretch}.inline-form .button{width:100%}.composer{flex-wrap:wrap}.composer input{flex-basis:calc(100% - 60px)}.composer>.button{flex:1}.safety-grid{grid-template-columns:1fr}.footer{flex-direction:column}.private-chat-heading{align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* GENZ TEEN CHAT feature upgrades */
+.youtube-share{display:grid;grid-template-columns:auto minmax(160px,1fr) auto;gap:8px;align-items:center;margin:10px 0}.youtube-share input{min-width:0}
+.profile-options-title{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.profile-preview{margin:8px 0 12px;padding:18px;border:2px solid var(--profile-accent,#7657f6);border-radius:14px;background:var(--panel);color:var(--profile-text,#211b3a)}
+.profile-preview strong{display:block;color:var(--username-colour,#7657f6);font-size:18px}.profile-preview p{margin:5px 0 0;color:var(--profile-text,#211b3a)}
+.profile-preview.rounded{border-radius:30px}.profile-preview.glass{background:color-mix(in srgb,var(--profile-accent,#7657f6) 13%,transparent);backdrop-filter:blur(10px)}
+.profile-preview.gradient{background:linear-gradient(135deg,#eee5ff,#d9f3ff)}.profile-preview.neon{box-shadow:0 0 16px var(--profile-accent,#7657f6)}
+.message-text a{color:var(--primary-dark);font-weight:700;text-decoration:underline;overflow-wrap:anywhere}
+#username-colour,#profile-text-colour,#profile-accent{height:44px;padding:5px;cursor:pointer}
+@media(max-width:620px){.youtube-share{grid-template-columns:1fr}.youtube-share .button{width:100%}}
+
+.profile-mini{border:1px solid var(--profile-accent,transparent);border-radius:12px;color:var(--profile-text,var(--text));padding:8px}.profile-mini.rounded{border-radius:24px}.profile-mini.glass{background:color-mix(in srgb,var(--profile-accent,#7657f6) 12%,transparent);backdrop-filter:blur(10px)}.profile-mini.gradient{background:linear-gradient(135deg,#eee5ff,#d9f3ff)}.profile-mini.neon{box-shadow:0 0 14px var(--profile-accent,#7657f6)}

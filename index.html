@@ -64,6 +64,7 @@
           </div>
           <nav class="nav-menu" aria-label="Main menu">
             <button class="nav-item active" data-view="public" type="button"><span>💬</span> Public chat</button>
+            <button class="nav-item" data-view="online" type="button"><span>🟢</span> Online users <span id="online-count" class="nav-count">0</span></button>
             <button class="nav-item" data-view="friends" type="button"><span>👥</span> Friends <span id="friend-count" class="nav-count">0</span></button>
             <button class="nav-item" data-view="private" type="button"><span>✉️</span> Private messages</button>
             <button class="nav-item" data-view="notifications" type="button"><span>🔔</span> Notifications <span id="notification-count" class="nav-count">0</span></button>
@@ -86,6 +87,12 @@
               <div id="emoji-picker" class="emoji-picker hidden" aria-label="Emoji picker">
                 <button type="button">😀</button><button type="button">😂</button><button type="button">😊</button><button type="button">😍</button><button type="button">🥳</button><button type="button">💙</button><button type="button">✨</button><button type="button">🙌</button><button type="button">👍</button><button type="button">🌈</button><button type="button">🤔</button><button type="button">🙏</button>
               </div>
+              <div class="youtube-share">
+                <button id="open-youtube" class="button button-quiet" type="button">▶ Choose on YouTube</button>
+                <input id="youtube-link" type="url" placeholder="Paste the selected YouTube video link here" aria-label="YouTube video link">
+                <button id="share-youtube" class="button button-primary" type="button">Share video</button>
+              </div>
+              <p class="tiny muted">Choose a video on YouTube, copy its link, return here, then select Share video.</p>
               <form id="message-form" class="composer">
                 <button id="emoji-toggle" class="icon-button" type="button" aria-label="Choose emoji">😊</button>
                 <input id="message-input" type="text" maxlength="1000" placeholder="Write a friendly message…" autocomplete="off" aria-label="Message" required>
@@ -93,6 +100,12 @@
               </form>
               <div class="composer-foot"><span>Keep it respectful.</span><span id="char-count">0 / 1000</span></div>
             </div>
+          </div>
+
+          <div class="view-panel hidden" id="view-online">
+            <div class="panel-heading"><div><div class="eyebrow">COMMUNITY</div><h2>🟢 Online users</h2><p class="muted">Members active in the last two minutes.</p></div><button id="refresh-online" class="button button-quiet" type="button">↻ Refresh</button></div>
+            <div class="notice-card">Online status updates while a member is signed in and connected. It needs the Appwrite <code>online_users</code> table described in README.txt.</div>
+            <div id="online-users-list" class="simple-list"><div class="empty-state">Loading online members…</div></div>
           </div>
 
           <div class="view-panel hidden" id="view-friends">
@@ -145,9 +158,15 @@
       <div class="dialog-heading"><div><div class="eyebrow">YOUR SPACE</div><h2>Edit profile</h2></div><button class="small-icon" value="cancel" aria-label="Close">✕</button></div>
       <label for="profile-name-input">Display name</label><input id="profile-name-input" maxlength="30" required>
       <label for="profile-bio-input">Short bio</label><textarea id="profile-bio-input" maxlength="120" placeholder="A little about your interests (no private details)"></textarea>
-      <label for="profile-country-input">Country</label><select id="profile-country-input"><option value="UG">🇺🇬 Uganda</option><option value="KE">🇰🇪 Kenya</option><option value="TZ">🇹🇿 Tanzania</option><option value="RW">🇷🇼 Rwanda</option><option value="BI">🇧🇮 Burundi</option><option value="SS">🇸🇸 South Sudan</option><option value="NG">🇳🇬 Nigeria</option><option value="GH">🇬🇭 Ghana</option><option value="ZA">🇿🇦 South Africa</option><option value="US">🇺🇸 United States</option><option value="GB">🇬🇧 United Kingdom</option><option value="OTHER">🌍 Other</option></select>
-      <label for="profile-avatar-file">Upload profile picture</label><input id="profile-avatar-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp"><div id="profile-avatar-preview" class="avatar-preview">No picture selected</div>
-      <p class="tiny muted">Profile picture uploads are limited to 5 MB. Avoid pictures that reveal private information.</p>
+      <label for="profile-photo-input">Profile picture URL (optional)</label><input id="profile-photo-input" type="url" placeholder="https://…">
+      <h3 class="profile-options-title">🎨 Profile appearance</h3>
+      <label for="username-colour">Username colour</label><input id="username-colour" type="color" value="#7657f6">
+      <label for="profile-text-colour">Profile text colour</label><input id="profile-text-colour" type="color" value="#211b3a">
+      <label for="profile-accent">Theme accent</label><input id="profile-accent" type="color" value="#7657f6">
+      <label for="profile-appearance">Profile appearance</label>
+      <select id="profile-appearance"><option value="classic">Classic</option><option value="rounded">Rounded</option><option value="glass">Glass</option><option value="gradient">Gradient</option><option value="neon">Neon</option></select>
+      <div id="profile-preview" class="profile-preview"><strong id="preview-name">Your username</strong><p id="preview-text">This is your profile preview.</p></div>
+      <p class="tiny muted">Profile changes are stored in this browser for now. Do not use a photo that reveals your school, address, or other private information.</p>
       <button class="button button-primary full-width" type="submit">Save profile</button>
     </form>
   </dialog>
