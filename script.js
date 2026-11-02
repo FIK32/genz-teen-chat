@@ -21,7 +21,7 @@
   const storageKey = "genzTeenChatLocalV1";
   let authMode = "login";
   let currentUser = null;
-  let profile = { name: "", bio: "", photo: "", usernameColour: "#7657f6", textColour: "#211b3a", accentColour: "#7657f6", appearance: "classic" };
+  let profile = { name: "", bio: "", photo: "", photoFileId: "", usernameColour: "#7657f6", textColour: "#211b3a", accentColour: "#7657f6", appearance: "classic" };
   let localData = { friends: [], notifications: [], blocked: [], reports: [] };
   let toastTimeout;
   let realtimeUnsubscribe = null;
@@ -32,6 +32,8 @@
   client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
   const account = new Appwrite.Account(client);
   const tablesDB = new Appwrite.TablesDB(client);
+  const storage = new Appwrite.Storage(client);
+  const PROFILE_BUCKET_ID = "genz-chat-media";
 
   function configured() {
     return APPWRITE_PROJECT_ID !== "PASTE_YOUR_PROJECT_ID_HERE" &&
@@ -178,6 +180,12 @@
     } catch (error) { showToast(error.message || "Could not submit the report."); }
   }
 
+  function fileViewUrl(fileId) {
+    if (!fileId) return "";
+    try { return String(storage.getFileView({ bucketId: PROFILE_BUCKET_ID, fileId })); }
+    catch (_) { return ""; }
+  }
+
   function setAvatar(element, name, photo = "") {
     if (!element) return;
     if (photo && /^https?:\/\//i.test(photo)) {
@@ -225,22 +233,25 @@
     }
   }
 
-  function youtubeVideoUrl(raw) {
+  function youtubeVideoId(raw) {
     try {
       const url = new URL(raw);
-      const hosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"];
-      if (!hosts.includes(url.hostname.toLowerCase())) return "";
-      const id = url.hostname.toLowerCase().includes("youtu.be") ? url.pathname.slice(1) : url.searchParams.get("v");
-      return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? `https://www.youtube.com/watch?v=${id}` : "";
+      const host = url.hostname.toLowerCase().replace(/^www\./, "");
+      let id = "";
+      if (host === "youtu.be") id = url.pathname.split("/").filter(Boolean)[0] || "";
+      else if (["youtube.com", "m.youtube.com", "music.youtube.com"].includes(host)) {
+        if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
+        else if (["/embed/", "/shorts/", "/live/"].some(prefix => url.pathname.startsWith(prefix))) id = url.pathname.split("/").filter(Boolean)[1] || "";
+      }
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : "";
     } catch (_) { return ""; }
   }
 
   function messageHtmlWithYoutube(text) {
     const escaped = escapeHTML(text);
-    return escaped.replace(/https?:\/\/[^\s<]+/g, (candidate) => {
-      const clean = candidate.replace(/[),.!?]+$/, "");
-      const valid = youtubeVideoUrl(clean);
-      return valid ? `<a href="${valid}" target="_blank" rel="noopener noreferrer">${clean}</a>${candidate.slice(clean.length)}` : candidate;
+    return escaped.replace(/\[\[YOUTUBE:([A-Za-z0-9_-]{11})\]\]/g, (_match, videoId) => {
+      const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
+      return `<div class="youtube-embed"><iframe src="${embedUrl}" title="YouTube video shared in public chat" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
     });
   }
 
@@ -388,8 +399,9 @@
       const date = row.$createdAt ? new Date(row.$createdAt) : null;
       const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const mine = currentUser && row.userId === currentUser.$id;
-      return `<article class="chat-message" data-message-id="${escapeHTML(row.$id || "")}">
-        <div class="message-avatar">${escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
+      const avatarUrl = row.avatarFileId ? fileViewUrl(row.avatarFileId) : "";
+      return `<article class="chat-message ${mine ? "mine" : "theirs"}" data-message-id="${escapeHTML(row.$id || "")}">
+        <div class="message-avatar">${avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="${escapeHTML(sender)} profile picture">` : escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
         <div class="message-content">
           <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
           <p class="message-text">${messageHtmlWithYoutube(text)}</p>
@@ -439,7 +451,8 @@
         data: {
           senderName: displayName(),
           messageText,
-          userId: currentUser.$id
+          userId: currentUser.$id,
+          ...(profile.photoFileId ? { avatarFileId: profile.photoFileId } : {})
         }
       });
       input.value = "";
@@ -552,11 +565,23 @@
     } catch (error) { showToast(error.message || "Could not submit report."); }
   }
 
-  function saveProfile(event) {
+  async function saveProfile(event) {
     event.preventDefault();
     profile.name = $("#profile-name-input").value.trim().slice(0, 30) || currentUser?.name || "Friend";
     profile.bio = $("#profile-bio-input").value.trim().slice(0, 120);
-    profile.photo = $("#profile-photo-input").value.trim();
+    const photoFile = $("#profile-photo-input").files?.[0];
+    if (photoFile) {
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(photoFile.type)) return showToast("Choose a JPG, PNG, WEBP or GIF image.");
+      if (photoFile.size > 5 * 1024 * 1024) return showToast("The picture must be 5 MB or smaller.");
+      try {
+        const uploaded = await storage.createFile({ bucketId: PROFILE_BUCKET_ID, fileId: Appwrite.ID.unique(), file: photoFile });
+        profile.photoFileId = uploaded.$id;
+        profile.photo = fileViewUrl(uploaded.$id);
+      } catch (error) {
+        console.error("Profile picture upload failed:", error);
+        return showToast("Picture upload failed. Check that the genz-chat-media bucket allows signed-in users to create and read files.");
+      }
+    }
     profile.usernameColour = $("#username-colour").value;
     profile.textColour = $("#profile-text-colour").value;
     profile.accentColour = $("#profile-accent").value;
@@ -621,7 +646,8 @@
     $("#edit-profile").addEventListener("click", () => {
       $("#profile-name-input").value = profile.name || displayName();
       $("#profile-bio-input").value = profile.bio || "";
-      $("#profile-photo-input").value = profile.photo || "";
+      $("#profile-photo-input").value = "";
+      $("#profile-photo-preview").textContent = profile.photo ? "Current profile picture is saved." : "Choose a picture to preview it here.";
       $("#username-colour").value = profile.usernameColour || "#7657f6";
       $("#profile-text-colour").value = profile.textColour || "#211b3a";
       $("#profile-accent").value = profile.accentColour || "#7657f6";
@@ -629,14 +655,26 @@
       updateProfilePreview();
       $("#profile-dialog").showModal();
     });
+    $("#profile-photo-input").addEventListener("change", () => {
+      const file = $("#profile-photo-input").files?.[0];
+      const preview = $("#profile-photo-preview");
+      if (!file) { preview.textContent = "Choose a picture to preview it here."; return; }
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+        preview.textContent = "Please choose a supported image no larger than 5 MB.";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => { preview.innerHTML = `<img src="${reader.result}" alt="Selected profile picture preview">`; };
+      reader.readAsDataURL(file);
+    });
     $("#profile-form").addEventListener("submit", saveProfile);
     ["#username-colour", "#profile-text-colour", "#profile-accent", "#profile-appearance", "#profile-name-input", "#profile-bio-input"].forEach(selector => $(selector).addEventListener("input", updateProfilePreview));
     $("#open-youtube").addEventListener("click", () => window.open("https://www.youtube.com/", "_blank", "noopener,noreferrer"));
     $("#share-youtube").addEventListener("click", () => {
       const field = $("#youtube-link");
-      const valid = youtubeVideoUrl(field.value.trim());
-      if (!valid) return showToast("Paste a valid YouTube video link first.");
-      $("#message-input").value = `🎬 YouTube video: ${valid}`;
+      const videoId = youtubeVideoId(field.value.trim());
+      if (!videoId) return showToast("Paste a valid YouTube video URL first.");
+      $("#message-input").value = `🎬 [[YOUTUBE:${videoId}]]`;
       $("#message-form").requestSubmit();
       field.value = "";
     });

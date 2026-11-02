@@ -88,11 +88,11 @@
                 <button type="button">😀</button><button type="button">😂</button><button type="button">😊</button><button type="button">😍</button><button type="button">🥳</button><button type="button">💙</button><button type="button">✨</button><button type="button">🙌</button><button type="button">👍</button><button type="button">🌈</button><button type="button">🤔</button><button type="button">🙏</button>
               </div>
               <div class="youtube-share">
-                <button id="open-youtube" class="button button-quiet" type="button">▶ Choose on YouTube</button>
-                <input id="youtube-link" type="url" placeholder="Paste the selected YouTube video link here" aria-label="YouTube video link">
-                <button id="share-youtube" class="button button-primary" type="button">Share video</button>
+                <button id="open-youtube" class="button button-quiet" type="button">▶ Find a video on YouTube</button>
+                <input id="youtube-link" type="url" placeholder="Paste a YouTube video URL to embed it" aria-label="YouTube video URL">
+                <button id="share-youtube" class="button button-primary" type="button">Add player to chat</button>
               </div>
-              <p class="tiny muted">Choose a video on YouTube, copy its link, return here, then select Share video.</p>
+              <p class="tiny muted">The public chat displays an embedded YouTube player, not a plain video link. Open YouTube, choose a video, copy its URL, then paste it here. Playback stays on YouTube's player; some videos do not allow embedding.</p>
               <form id="message-form" class="composer">
                 <button id="emoji-toggle" class="icon-button" type="button" aria-label="Choose emoji">😊</button>
                 <input id="message-input" type="text" maxlength="1000" placeholder="Write a friendly message…" autocomplete="off" aria-label="Message" required>
@@ -158,7 +158,7 @@
       <div class="dialog-heading"><div><div class="eyebrow">YOUR SPACE</div><h2>Edit profile</h2></div><button class="small-icon" value="cancel" aria-label="Close">✕</button></div>
       <label for="profile-name-input">Display name</label><input id="profile-name-input" maxlength="30" required>
       <label for="profile-bio-input">Short bio</label><textarea id="profile-bio-input" maxlength="120" placeholder="A little about your interests (no private details)"></textarea>
-      <label for="profile-photo-input">Profile picture URL (optional)</label><input id="profile-photo-input" type="url" placeholder="https://…">
+      <label for="profile-photo-input">Upload profile picture from your device</label><input id="profile-photo-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><div id="profile-photo-preview" class="profile-photo-preview" aria-live="polite">Choose a picture to preview it here.</div><p class="tiny muted">Choose JPG, PNG, WEBP or GIF. Maximum file size: 5 MB.</p>
       <h3 class="profile-options-title">🎨 Profile appearance</h3>
       <label for="username-colour">Username colour</label><input id="username-colour" type="color" value="#7657f6">
       <label for="profile-text-colour">Profile text colour</label><input id="profile-text-colour" type="color" value="#211b3a">
