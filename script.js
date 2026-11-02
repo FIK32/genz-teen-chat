@@ -14,6 +14,8 @@
   const APPWRITE_PROJECT_ID = "6ada4252003150fd4cdd";
   const DATABASE_ID = "genz-chat-db";
   const MESSAGES_TABLE_ID = "messages";
+  const PROFILES_TABLE_ID = "profiles";
+  const MEDIA_BUCKET_ID = "genz-chat-media";
   const PRIVATE_FUNCTION_URL = "https://starter-function-pw9b.nyc.appwrite.run";
 
   const $ = (selector) => document.querySelector(selector);
@@ -32,6 +34,10 @@
   client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
   const account = new Appwrite.Account(client);
   const tablesDB = new Appwrite.TablesDB(client);
+  const storage = new Appwrite.Storage(client);
+  let myProfileRow = null;
+  let onlineRefreshTimer = null;
+  let profileRealtimeUnsubscribe = null;
 
   function configured() {
     return APPWRITE_PROJECT_ID !== "PASTE_YOUR_PROJECT_ID_HERE" &&
@@ -196,10 +202,134 @@
     renderNotifications();
   }
 
+  const COUNTRY_OPTIONS = [
+    ["UG", "🇺🇬 Uganda"], ["KE", "🇰🇪 Kenya"], ["TZ", "🇹🇿 Tanzania"], ["RW", "🇷🇼 Rwanda"],
+    ["BI", "🇧🇮 Burundi"], ["SS", "🇸🇸 South Sudan"], ["NG", "🇳🇬 Nigeria"], ["GH", "🇬🇭 Ghana"],
+    ["ZA", "🇿🇦 South Africa"], ["US", "🇺🇸 United States"], ["GB", "🇬🇧 United Kingdom"], ["OTHER", "🌍 Other"]
+  ];
+  function countryLabel(code) { return COUNTRY_OPTIONS.find(([key]) => key === code)?.[1] || "🌍"; }
+  function fileView(fileId) {
+    if (!fileId) return "";
+    try { return storage.getFileView({ bucketId: MEDIA_BUCKET_ID, fileId }).toString(); }
+    catch (_) { return ""; }
+  }
+  async function uploadMedia(file, purpose) {
+    if (!file) return "";
+    const imageOK = ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(file.type);
+    const videoOK = ["video/mp4", "video/webm"].includes(file.type);
+    if (purpose === "avatar" && !imageOK) throw new Error("Choose a JPG, PNG, GIF or WEBP picture.");
+    if (purpose === "message" && !imageOK && !videoOK) throw new Error("Choose an image or MP4/WEBM video.");
+    const limit = purpose === "avatar" ? 5 : 25;
+    if (file.size > limit * 1024 * 1024) throw new Error(`File must be ${limit} MB or smaller.`);
+    const permissions = [
+      Appwrite.Permission.read(Appwrite.Role.users()),
+      Appwrite.Permission.update(Appwrite.Role.user(currentUser.$id)),
+      Appwrite.Permission.delete(Appwrite.Role.user(currentUser.$id))
+    ];
+    const uploaded = await storage.createFile({ bucketId: MEDIA_BUCKET_ID, fileId: Appwrite.ID.unique(), file, permissions });
+    return uploaded.$id;
+  }
+  async function loadMyProfile() {
+    if (!currentUser) return;
+    try {
+      myProfileRow = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: PROFILES_TABLE_ID, rowId: currentUser.$id });
+      profile.name = myProfileRow.displayName || profile.name || currentUser.name;
+      profile.bio = myProfileRow.bio || "";
+      profile.countryCode = myProfileRow.countryCode || "UG";
+      profile.avatarFileId = myProfileRow.avatarFileId || "";
+      profile.photo = fileView(profile.avatarFileId);
+      saveLocalData(); renderProfile();
+    } catch (error) {
+      if (error.code !== 404) console.warn("Profile could not be loaded; a new one will be created when saved.", error);
+    }
+  }
+  async function saveProfileToCloud() {
+    if (!currentUser) return;
+    const data = {
+      userId: currentUser.$id,
+      displayName: profile.name,
+      bio: profile.bio,
+      countryCode: profile.countryCode || "UG",
+      avatarFileId: profile.avatarFileId || "",
+      lastSeen: new Date().toISOString()
+    };
+    const permissions = [
+      Appwrite.Permission.read(Appwrite.Role.users()),
+      Appwrite.Permission.update(Appwrite.Role.user(currentUser.$id)),
+      Appwrite.Permission.delete(Appwrite.Role.user(currentUser.$id))
+    ];
+    if (myProfileRow) {
+      myProfileRow = await tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: PROFILES_TABLE_ID, rowId: currentUser.$id, data });
+    } else {
+      myProfileRow = await tablesDB.createRow({ databaseId: DATABASE_ID, tableId: PROFILES_TABLE_ID, rowId: currentUser.$id, data, permissions });
+    }
+  }
+  async function updatePresence() {
+    if (!currentUser || !myProfileRow) return;
+    try {
+      myProfileRow = await tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: PROFILES_TABLE_ID, rowId: currentUser.$id, data: { lastSeen: new Date().toISOString() } });
+      await loadOnlineUsers();
+    } catch (error) { console.warn("Presence update failed", error); }
+  }
+  async function loadOnlineUsers() {
+    const target = document.querySelector("#online-users-list");
+    const count = document.querySelector("#online-count");
+    if (!target || !count || !currentUser) return;
+    try {
+      const response = await tablesDB.listRows({ databaseId: DATABASE_ID, tableId: PROFILES_TABLE_ID,
+        queries: [Appwrite.Query.orderDesc("lastSeen"), Appwrite.Query.limit(100)] });
+      const cutoff = Date.now() - 90000;
+      const online = (response.rows || []).filter(row => row.lastSeen && new Date(row.lastSeen).getTime() > cutoff);
+      count.textContent = String(online.length);
+      target.innerHTML = online.map(row => { const avatar = fileView(row.avatarFileId); return `<div class="online-user-row"><span class="online-indicator"></span>${avatar ? `<img class="online-avatar" src="${escapeHTML(avatar)}" alt="">` : `<span class="online-avatar-fallback">${escapeHTML((row.displayName || "M").slice(0,1).toUpperCase())}</span>`}<strong>${escapeHTML(row.displayName || "Member")}</strong><span>${escapeHTML(countryLabel(row.countryCode))}</span></div>`; }).join("") || `<p class="muted">No one else is online right now.</p>`;
+    } catch (error) { target.innerHTML = `<p class="muted">Online list unavailable. Check profiles table read permissions.</p>`; }
+  }
+  function installOnlinePanel() {
+    const footer = document.querySelector(".sidebar-bottom");
+    if (!footer || document.querySelector("#online-users-button")) return;
+    footer.innerHTML = `<button id="online-users-button" class="online-users-button" type="button"><span class="online-dot"></span> Online now: <strong id="online-count">0</strong></button>`;
+    const panel = document.createElement("section");
+    panel.id = "online-users-panel"; panel.className = "online-users-panel hidden";
+    panel.innerHTML = `<div class="online-panel-heading"><strong>Online members</strong><button id="online-users-close" type="button" aria-label="Close">✕</button></div><div id="online-users-list"></div>`;
+    document.body.appendChild(panel);
+    document.querySelector("#online-users-button").addEventListener("click", () => { panel.classList.toggle("hidden"); loadOnlineUsers(); });
+    document.querySelector("#online-users-close").addEventListener("click", () => panel.classList.add("hidden"));
+  }
+  function addThemePicker() {
+    if (document.querySelector("#theme-picker")) return;
+    const select = document.createElement("select"); select.id = "theme-picker"; select.setAttribute("aria-label", "Choose chat theme");
+    select.innerHTML = `<option value="lavender">Lavender</option><option value="ocean">Ocean</option><option value="sunset">Sunset</option><option value="nature">Nature</option><option value="neon">Neon Night</option>`;
+    select.value = localStorage.getItem("genzTeenChatThemeMode") || "lavender";
+    document.querySelector(".top-actions")?.insertBefore(select, document.querySelector("#theme-toggle"));
+    select.addEventListener("change", () => setTheme(localStorage.getItem("genzTeenChatThemeMode") === "dark", select.value));
+  }
+  function addMediaControls() {
+    const form = document.querySelector("#message-form");
+    if (!form || document.querySelector("#message-media-input")) return;
+    const messageTextInput = form.querySelector("#message-input"); if (messageTextInput) messageTextInput.required = false;
+    const media = document.createElement("input"); media.type = "file"; media.id = "message-media-input"; media.accept = "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"; media.hidden = true;
+    const choose = document.createElement("button"); choose.type = "button"; choose.className = "icon-button"; choose.textContent = "📎"; choose.title = "Attach an image or video";
+    const youtube = document.createElement("button"); youtube.type = "button"; youtube.className = "icon-button"; youtube.textContent = "▶️"; youtube.title = "Open YouTube";
+    choose.addEventListener("click", () => media.click());
+    media.addEventListener("change", () => { const f = media.files?.[0]; if (f) showToast(`Ready to share: ${f.name}`); });
+    youtube.addEventListener("click", () => window.open("https://www.youtube.com/", "_blank", "noopener,noreferrer"));
+    form.insertBefore(choose, form.querySelector("input")); form.insertBefore(youtube, form.querySelector("input")); form.appendChild(media);
+  }
+  function renderMessageBody(text, fileId, mediaType) {
+    let mediaHTML = "";
+    const url = fileView(fileId);
+    if (url && mediaType === "image") mediaHTML = `<img class="shared-media" src="${escapeHTML(url)}" alt="Shared image" loading="lazy">`;
+    if (url && mediaType === "video") mediaHTML = `<video class="shared-media" controls preload="metadata"><source src="${escapeHTML(url)}"></video>`;
+    const safeText = escapeHTML(text);
+    const yt = String(text || "").match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const youtubeHTML = yt ? `<iframe class="youtube-embed" src="https://www.youtube-nocookie.com/embed/${yt[1]}" title="YouTube video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : "";
+    return `${safeText}${mediaHTML}${youtubeHTML}`;
+  }
   function renderProfile() {
     $("#profile-display-name").textContent = displayName();
     $("#profile-email").textContent = currentUser?.email || "Signed in";
     setAvatar($("#profile-avatar"), displayName(), profile.photo);
+    const country = document.querySelector("#profile-country-label"); if (country) country.textContent = countryLabel(profile.countryCode || "UG");
   }
 
   function setAuthMode(mode) {
@@ -223,6 +353,10 @@
     $("#chat-app").classList.remove("hidden");
     $("#signout-button").classList.remove("hidden");
     renderProfile();
+    installOnlinePanel(); addThemePicker(); addMediaControls();
+    loadMyProfile().then(() => { saveProfileToCloud().catch(err => console.warn("Profile setup:", err)); updatePresence(); });
+    if (onlineRefreshTimer) clearInterval(onlineRefreshTimer);
+    onlineRefreshTimer = setInterval(updatePresence, 30000);
     renderFriends();
     renderNotifications();
     renderBlocked();
@@ -237,6 +371,7 @@
 
   function showAuth() {
     currentUser = null;
+    if (onlineRefreshTimer) { clearInterval(onlineRefreshTimer); onlineRefreshTimer = null; }
     $("#auth-screen").classList.remove("hidden");
     $("#chat-app").classList.add("hidden");
     $("#signout-button").classList.add("hidden");
@@ -293,29 +428,21 @@
     const feed = $("#chat-feed");
     const blocked = new Set(localData.blocked.map((n) => n.toLowerCase()));
     const visibleRows = (rows || []).filter((row) => !blocked.has(String(row.userId || "").toLowerCase()) && !blocked.has(String(row.senderName || "").toLowerCase()));
-    if (!visibleRows.length) {
-      feed.innerHTML = `<div class="empty-state">No messages yet. Be the first to say hello! 👋</div>`;
-      return;
-    }
+    if (!visibleRows.length) { feed.innerHTML = `<div class="empty-state">No messages yet. Be the first to say hello! 👋</div>`; return; }
     feed.innerHTML = visibleRows.map((row) => {
       const sender = String(row.senderName || "Community member");
-      const text = String(row.messageText || "");
       const date = row.$createdAt ? new Date(row.$createdAt) : null;
       const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const mine = currentUser && row.userId === currentUser.$id;
-      return `<article class="chat-message" data-message-id="${escapeHTML(row.$id || "")}">
-        <div class="message-avatar">${escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
-        <div class="message-content">
-          <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
-          <p class="message-text">${escapeHTML(text)}</p>
-          <div class="message-tools">
-            <button type="button" data-react="💙" aria-label="React with heart">💙 React</button>
-            <button type="button" data-react="😂" aria-label="React with laughing face">😂 React</button>
-            <button type="button" data-report-message="${escapeHTML(sender)}" data-report-user-id="${escapeHTML(row.userId || "")}">🚩 Report</button>
-            ${mine ? `<button type="button" data-delete-message="${escapeHTML(row.$id || "")}">Delete</button>` : `<button type="button" data-block-message="${escapeHTML(sender)}" data-block-user-id="${escapeHTML(row.userId || "")}">Block</button>`}
-          </div>
-        </div>
-      </article>`;
+      const avatarUrl = fileView(row.avatarFileId);
+      const avatar = avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="">` : escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G");
+      return `<article class="chat-message ${mine ? "mine" : "theirs"}" data-message-id="${escapeHTML(row.$id || "")}">
+        <div class="message-avatar">${avatar}</div><div class="message-content">
+          <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="country-flag">${escapeHTML(countryLabel(row.countryCode || ""))}</span><span class="message-time">${escapeHTML(time)}</span></div>
+          <div class="message-text">${renderMessageBody(row.messageText || "", row.mediaFileId, row.mediaType)}</div>
+          <div class="message-tools"><button type="button" data-react="💙">💙 React</button><button type="button" data-react="😂">😂 React</button><button type="button" data-report-message="${escapeHTML(sender)}" data-report-user-id="${escapeHTML(row.userId || "")}">🚩 Report</button>
+          ${mine ? `<button type="button" data-delete-message="${escapeHTML(row.$id || "")}">Delete</button>` : `<button type="button" data-block-message="${escapeHTML(sender)}" data-block-user-id="${escapeHTML(row.userId || "")}">Block</button>`}</div>
+        </div></article>`;
     }).join("");
   }
 
@@ -340,34 +467,24 @@
     event.preventDefault();
     const input = $("#message-input");
     const messageText = input.value.trim();
-    if (!messageText) return;
+    const fileInput = $("#message-media-input");
+    const file = fileInput?.files?.[0] || null;
+    if (!messageText && !file) return;
     if (!currentUser) return showToast("Sign in before sending a message.");
-    if (!configured()) return showToast("Add your Appwrite project and database IDs in script.js first.");
     if (messageText.length > 1000) return showToast("Messages must be 1000 characters or fewer.");
-    const button = $("#message-form button[type='submit']");
-    button.disabled = true;
+    const button = $("#message-form button[type='submit']"); button.disabled = true;
     try {
-      await tablesDB.createRow({
-        databaseId: DATABASE_ID,
-        tableId: MESSAGES_TABLE_ID,
-        rowId: Appwrite.ID.unique(),
-        data: {
-          senderName: displayName(),
-          messageText,
-          userId: currentUser.$id
-        }
-      });
-      input.value = "";
-      $("#char-count").textContent = "0 / 1000";
-      $("#emoji-picker").classList.add("hidden");
-      await loadPublicMessages();
-    } catch (error) {
-      console.error("Could not send message:", error);
-      showToast(`Message not sent: ${error.message || "check Appwrite permissions"}`);
-    } finally {
-      button.disabled = false;
-      input.focus();
-    }
+      let mediaFileId = ""; let mediaType = "";
+      if (file) { mediaFileId = await uploadMedia(file, "message"); mediaType = file.type.startsWith("image/") ? "image" : "video"; }
+      await tablesDB.createRow({ databaseId: DATABASE_ID, tableId: MESSAGES_TABLE_ID, rowId: Appwrite.ID.unique(), data: {
+        senderName: displayName(), messageText: messageText || (mediaType === "image" ? "Shared a photo" : "Shared a video"),
+        userId: currentUser.$id, countryCode: profile.countryCode || "UG", avatarFileId: profile.avatarFileId || "",
+        mediaFileId, mediaType
+      }});
+      input.value = ""; if (fileInput) fileInput.value = "";
+      $("#char-count").textContent = "0 / 1000"; $("#emoji-picker").classList.add("hidden"); await loadPublicMessages();
+    } catch (error) { console.error("Could not send message:", error); showToast(`Message not sent: ${error.message || "check Appwrite permissions"}`); }
+    finally { button.disabled = false; input.focus(); }
   }
 
   function subscribeRealtime() {
@@ -466,22 +583,29 @@
     } catch (error) { showToast(error.message || "Could not submit report."); }
   }
 
-  function saveProfile(event) {
+  async function saveProfile(event) {
     event.preventDefault();
-    profile.name = $("#profile-name-input").value.trim().slice(0, 30) || currentUser?.name || "Friend";
-    profile.bio = $("#profile-bio-input").value.trim().slice(0, 120);
-    profile.photo = $("#profile-photo-input").value.trim();
-    saveLocalData();
-    renderProfile();
-    $("#profile-dialog").close();
-    addNotification("Your profile changes were saved on this device.");
-    showToast("Profile saved on this device.");
+    const saveButton = $("#profile-form button[type='submit']"); saveButton.disabled = true;
+    try {
+      profile.name = $("#profile-name-input").value.trim().slice(0, 30) || currentUser?.name || "Friend";
+      profile.bio = $("#profile-bio-input").value.trim().slice(0, 120);
+      profile.countryCode = $("#profile-country-input").value || "UG";
+      const photoFile = $("#profile-avatar-file")?.files?.[0];
+      if (photoFile) profile.avatarFileId = await uploadMedia(photoFile, "avatar");
+      profile.photo = fileView(profile.avatarFileId);
+      await saveProfileToCloud(); saveLocalData(); renderProfile();
+      $("#profile-dialog").close(); addNotification("Your profile was saved to your account."); showToast("Profile saved.");
+    } catch (error) { showToast(`Profile not saved: ${error.message || "check profiles permissions"}`); }
+    finally { saveButton.disabled = false; }
   }
-
-  function setTheme(dark) {
-    document.body.classList.toggle("dark", dark);
+  function setTheme(dark, theme = localStorage.getItem("genzTeenChatThemeMode") || "lavender") {
+    const themes = ["lavender", "ocean", "sunset", "nature", "neon"];
+    if (!themes.includes(theme)) theme = "lavender";
+    document.body.classList.remove("dark", ...themes.map(t => `theme-${t}`));
+    document.body.classList.add(`theme-${theme}`); document.body.classList.toggle("dark", !!dark);
     $("#theme-toggle").textContent = dark ? "☀️" : "🌙";
-    try { localStorage.setItem("genzTeenChatTheme", dark ? "dark" : "light"); } catch (_) {}
+    const picker = document.querySelector("#theme-picker"); if (picker) picker.value = theme;
+    try { localStorage.setItem("genzTeenChatTheme", dark ? "dark" : "light"); localStorage.setItem("genzTeenChatThemeMode", theme); } catch (_) {}
   }
 
   function bindEvents() {
@@ -531,10 +655,14 @@
     $("#edit-profile").addEventListener("click", () => {
       $("#profile-name-input").value = profile.name || displayName();
       $("#profile-bio-input").value = profile.bio || "";
-      $("#profile-photo-input").value = profile.photo || "";
+      $("#profile-photo-input").value = "";
+      $("#profile-country-input").value = profile.countryCode || "UG";
+      const avatarInput = $("#profile-avatar-file"); if (avatarInput) avatarInput.value = "";
+      const preview = $("#profile-avatar-preview"); if (preview) preview.innerHTML = profile.photo ? `<img src="${escapeHTML(profile.photo)}" alt="Current profile picture">` : "No picture selected";
       $("#profile-dialog").showModal();
     });
     $("#profile-form").addEventListener("submit", saveProfile);
+    $("#profile-avatar-file").addEventListener("change", () => { const f = $("#profile-avatar-file").files?.[0]; const preview = $("#profile-avatar-preview"); if (!preview) return; if (!f) { preview.textContent = "No picture selected"; return; } if (!f.type.startsWith("image/")) { preview.textContent = "Choose an image file"; return; } const url = URL.createObjectURL(f); preview.innerHTML = `<img src="${url}" alt="Profile picture preview">`; });
     $("#theme-toggle").addEventListener("click", () => setTheme(!document.body.classList.contains("dark")));
     $("#chat-feed").addEventListener("click", (event) => {
       const react = event.target.closest("[data-react]");
@@ -578,7 +706,7 @@
     loadLocalData();
     bindEvents();
     try {
-      setTheme(localStorage.getItem("genzTeenChatTheme") === "dark");
+      setTheme(localStorage.getItem("genzTeenChatTheme") === "dark", localStorage.getItem("genzTeenChatThemeMode") || "lavender");
     } catch (_) {}
     if (!configured()) {
       setConnectionStatus("Add project details");

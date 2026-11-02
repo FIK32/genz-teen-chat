@@ -145,8 +145,9 @@
       <div class="dialog-heading"><div><div class="eyebrow">YOUR SPACE</div><h2>Edit profile</h2></div><button class="small-icon" value="cancel" aria-label="Close">✕</button></div>
       <label for="profile-name-input">Display name</label><input id="profile-name-input" maxlength="30" required>
       <label for="profile-bio-input">Short bio</label><textarea id="profile-bio-input" maxlength="120" placeholder="A little about your interests (no private details)"></textarea>
-      <label for="profile-photo-input">Profile picture URL (optional)</label><input id="profile-photo-input" type="url" placeholder="https://…">
-      <p class="tiny muted">Profile changes are stored in this browser for now. Do not use a photo that reveals your school, address, or other private information.</p>
+      <label for="profile-country-input">Country</label><select id="profile-country-input"><option value="UG">🇺🇬 Uganda</option><option value="KE">🇰🇪 Kenya</option><option value="TZ">🇹🇿 Tanzania</option><option value="RW">🇷🇼 Rwanda</option><option value="BI">🇧🇮 Burundi</option><option value="SS">🇸🇸 South Sudan</option><option value="NG">🇳🇬 Nigeria</option><option value="GH">🇬🇭 Ghana</option><option value="ZA">🇿🇦 South Africa</option><option value="US">🇺🇸 United States</option><option value="GB">🇬🇧 United Kingdom</option><option value="OTHER">🌍 Other</option></select>
+      <label for="profile-avatar-file">Upload profile picture</label><input id="profile-avatar-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp"><div id="profile-avatar-preview" class="avatar-preview">No picture selected</div>
+      <p class="tiny muted">Profile picture uploads are limited to 5 MB. Avoid pictures that reveal private information.</p>
       <button class="button button-primary full-width" type="submit">Save profile</button>
     </form>
   </dialog>
