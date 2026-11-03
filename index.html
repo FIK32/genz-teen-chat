@@ -8,7 +8,6 @@
   <link rel="apple-touch-icon" href="favicon.svg">
   <title>GENZ TEEN CHAT</title>
  <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="style-upgrade.css">
   <script src="https://cdn.jsdelivr.net/npm/appwrite@29.0.0"></script>
   <script src="script.js" defer></script>
 </head>
@@ -56,7 +55,18 @@
             <label for="auth-password">Password</label>
             <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters">
             <button id="auth-submit" class="button button-primary full-width" type="submit">Sign in</button>
+            <button id="forgot-password-button" class="auth-text-button" type="button">Forgot password?</button>
             <p id="auth-message" class="form-message" aria-live="polite"></p>
+          </form>
+          <form id="recovery-form" class="hidden" novalidate>
+            <p id="recovery-intro" class="muted">Choose a new password for your account.</p>
+            <label for="recovery-password">New password</label>
+            <input id="recovery-password" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters">
+            <label for="recovery-password-confirm">Confirm new password</label>
+            <input id="recovery-password-confirm" type="password" minlength="8" autocomplete="new-password" required placeholder="Enter the password again">
+            <button id="recovery-submit" class="button button-primary full-width" type="submit">Save new password</button>
+            <button id="recovery-back" class="auth-text-button" type="button">Back to sign in</button>
+            <p id="recovery-message" class="form-message" aria-live="polite"></p>
           </form>
           <p class="tiny muted">Use an email you can access. Never share your password with anyone.</p>
         </div>

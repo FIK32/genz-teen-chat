@@ -20,6 +20,8 @@
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const storageKey = "genzTeenChatLocalV1";
   let authMode = "login";
+  let recoveryUserId = "";
+  let recoverySecret = "";
   let currentUser = null;
   let profile = { name: "", bio: "", photo: "", photoFileId: "", usernameColour: "#7657f6", textColour: "#211b3a", accentColour: "#7657f6", appearance: "classic", bubbleMine: "#e8ddff", bubbleOther: "#f0ebff", effects: [] };
   let localData = { friends: [], notifications: [], blocked: [], reports: [] };
@@ -397,6 +399,9 @@
 
   function setAuthMode(mode) {
     authMode = mode;
+    $("#auth-form").classList.remove("hidden");
+    $("#recovery-form").classList.add("hidden");
+    $("#forgot-password-button").classList.toggle("hidden", mode !== "login");
     $$(".auth-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.authMode === mode));
     const signup = mode === "signup";
     $("#auth-title").textContent = signup ? "Join the community" : "Welcome back";
@@ -478,6 +483,90 @@
     } finally {
       button.disabled = false;
       button.textContent = authMode === "signup" ? "Create account" : "Sign in";
+    }
+  }
+
+  async function handleForgotPassword() {
+    const email = $("#auth-email").value.trim();
+    const message = $("#auth-message");
+    message.textContent = "";
+    if (!configured()) {
+      message.textContent = "Appwrite is not configured. Check the project settings in script.js.";
+      return;
+    }
+    if (!email) {
+      message.textContent = "Enter your email address first, then choose Forgot password?";
+      $("#auth-email").focus();
+      return;
+    }
+    const button = $("#forgot-password-button");
+    button.disabled = true;
+    button.textContent = "Sending reset link…";
+    try {
+      const recoveryUrl = window.location.origin + window.location.pathname;
+      await account.createRecovery({ email, url: recoveryUrl });
+      message.classList.add("success-message");
+      message.textContent = "If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder.";
+    } catch (error) {
+      message.classList.remove("success-message");
+      message.textContent = error?.message || "We couldn't send the reset link. Please check the email and try again.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Forgot password?";
+    }
+  }
+
+  function showRecoveryFormFromLink() {
+    const params = new URLSearchParams(window.location.search);
+    recoveryUserId = params.get("userId") || "";
+    recoverySecret = params.get("secret") || "";
+    if (!recoveryUserId || !recoverySecret) return false;
+    $("#auth-form").classList.add("hidden");
+    $("#recovery-form").classList.remove("hidden");
+    $(".auth-tabs").classList.add("hidden");
+    $("#auth-title").textContent = "Reset your password";
+    $("#auth-subtitle").textContent = "Choose a new password to get back into your account.";
+    $("#recovery-intro").textContent = "Use a new password with at least 8 characters.";
+    return true;
+  }
+
+  async function handlePasswordRecovery(event) {
+    event.preventDefault();
+    const password = $("#recovery-password").value;
+    const passwordAgain = $("#recovery-password-confirm").value;
+    const message = $("#recovery-message");
+    message.classList.remove("success-message");
+    message.textContent = "";
+    if (!recoveryUserId || !recoverySecret) {
+      message.textContent = "This reset link is incomplete. Request a new password reset link.";
+      return;
+    }
+    if (password.length < 8) {
+      message.textContent = "Your new password must contain at least 8 characters.";
+      return;
+    }
+    if (password !== passwordAgain) {
+      message.textContent = "The passwords do not match.";
+      return;
+    }
+    const button = $("#recovery-submit");
+    button.disabled = true;
+    button.textContent = "Saving password…";
+    try {
+      await account.updateRecovery({ userId: recoveryUserId, secret: recoverySecret, password, passwordAgain });
+      message.classList.add("success-message");
+      message.textContent = "Your password has been changed. You can now sign in with your new password.";
+      $("#recovery-form").reset();
+      recoveryUserId = "";
+      recoverySecret = "";
+      button.classList.add("hidden");
+      $("#recovery-back").textContent = "Return to sign in";
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+      message.textContent = error?.message || "The reset link may have expired. Request a new one and try again.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save new password";
     }
   }
 
@@ -728,6 +817,15 @@
   function bindEvents() {
     $$(".auth-tab").forEach((tab) => tab.addEventListener("click", () => setAuthMode(tab.dataset.authMode)));
     $("#auth-form").addEventListener("submit", handleAuth);
+    $("#forgot-password-button").addEventListener("click", handleForgotPassword);
+    $("#recovery-form").addEventListener("submit", handlePasswordRecovery);
+    $("#recovery-back").addEventListener("click", () => {
+      $("#recovery-form").classList.add("hidden");
+      $("#auth-form").classList.remove("hidden");
+      $(".auth-tabs").classList.remove("hidden");
+      setAuthMode("login");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    });
     $("#signout-button").addEventListener("click", handleSignOut);
     $("#message-form").addEventListener("submit", sendMessage);
     $("#private-open-form").addEventListener("submit", openPrivateConversation);
@@ -853,6 +951,7 @@
   async function init() {
     loadLocalData();
     bindEvents();
+    const hasRecoveryLink = showRecoveryFormFromLink();
     try {
       setTheme(localStorage.getItem("genzTeenChatTheme") === "dark");
       applyChatBackground(localStorage.getItem("genzPublicChatBackground") || "neon-dreams");
@@ -860,6 +959,11 @@
     if (!configured()) {
       setConnectionStatus("Add project details");
       $("#auth-message").textContent = "Before signing in, add your Project ID and Database ID in script.js.";
+      return;
+    }
+    if (hasRecoveryLink) {
+      showAuth();
+      showRecoveryFormFromLink();
       return;
     }
     try {

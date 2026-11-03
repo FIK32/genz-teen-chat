@@ -154,3 +154,77 @@ body.dark .chat-message.mine .message-meta strong{color:#b6f0c8}
 @media(max-width:560px){.chat-message .message-content.has-youtube{width:calc(100vw - 76px);max-width:calc(100vw - 76px);flex-basis:calc(100vw - 76px)}}
 
 .chat-message .message-content.has-youtube .youtube-embed{position:relative;overflow:hidden}
+
+
+/* CYBER FUTURE authentication redesign — keeps existing Appwrite form IDs and behaviour */
+body:has(#auth-screen:not(.hidden)){background:#080b1c;color:#eef4ff;background-image:linear-gradient(rgba(46,220,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(46,220,255,.055) 1px,transparent 1px),radial-gradient(ellipse at 12% 18%,rgba(0,195,255,.18),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(190,45,255,.17),transparent 38%);background-size:34px 34px,34px 34px,auto,auto}
+body:has(#auth-screen:not(.hidden)) .topbar{border-color:rgba(94,220,255,.2)}
+body:has(#auth-screen:not(.hidden)) .brand{color:#f3f7ff}
+body:has(#auth-screen:not(.hidden)) .brand b{color:#4eeaff}
+body:has(#auth-screen:not(.hidden)) .brand-mark{background:linear-gradient(135deg,#00d9ff,#8c4dff);box-shadow:0 0 22px rgba(0,217,255,.4)}
+body:has(#auth-screen:not(.hidden)) .status-pill{color:#a8eaff;background:rgba(10,24,49,.75);border-color:rgba(71,220,255,.25)}
+#auth-screen .welcome-panel{isolation:isolate;min-height:510px;border:1px solid rgba(68,220,255,.3);background:radial-gradient(circle at 78% 22%,rgba(0,226,255,.25),transparent 24%),radial-gradient(circle at 20% 85%,rgba(191,58,255,.28),transparent 32%),linear-gradient(140deg,#101b3d 0%,#17113a 54%,#251044 100%);box-shadow:inset 0 0 60px rgba(35,188,255,.07),0 22px 70px rgba(0,0,0,.3)}
+#auth-screen .welcome-panel:before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(68,230,255,.08) 48%,transparent 72%);transform:translateX(-100%);animation:cyber-scan 8s ease-in-out infinite}
+#auth-screen .welcome-panel:after{content:"✦  ◇  ✧  ⬡  ✦";position:absolute;right:7%;top:12%;color:rgba(105,235,255,.45);font-size:clamp(28px,4vw,48px);letter-spacing:.25em;text-shadow:0 0 22px #00d9ff;transform:rotate(-12deg);pointer-events:none}
+#auth-screen .eyebrow{color:#65eaff}
+#auth-screen .welcome-panel h1 span{color:#75efff;text-shadow:0 0 24px rgba(0,217,255,.42)}
+#auth-screen .welcome-points span{border-color:rgba(82,224,255,.28);background:rgba(10,25,58,.55);color:#e5faff;backdrop-filter:blur(8px)}
+#auth-screen .safety-note{border-color:rgba(99,225,255,.24);background:rgba(5,12,34,.48)}
+#auth-screen .auth-card{align-self:center;border:1px solid rgba(91,218,255,.32);border-radius:24px;color:#eff7ff;background:linear-gradient(155deg,rgba(19,31,63,.97),rgba(20,13,48,.97));box-shadow:0 24px 80px rgba(0,0,0,.42),0 0 36px rgba(0,199,255,.09);backdrop-filter:blur(16px)}
+#auth-screen .auth-tabs{background:rgba(3,11,30,.7);border:1px solid rgba(96,216,255,.16)}
+#auth-screen .auth-tab{color:#aabbd8}
+#auth-screen .auth-tab.active{color:#061525;background:linear-gradient(100deg,#51eaff,#9b82ff);box-shadow:0 0 20px rgba(65,222,255,.2)}
+#auth-screen .auth-card h2{color:#f5fbff}
+#auth-screen .auth-card .muted,#auth-screen .auth-card .tiny{color:#a9bad5}
+#auth-screen label{color:#d9eaff}
+#auth-screen input{color:#f4f8ff;background:rgba(4,12,31,.78);border-color:rgba(112,190,255,.25)}
+#auth-screen input::placeholder{color:#7589a9}
+#auth-screen input:focus{border-color:#4de7ff;box-shadow:0 0 0 3px rgba(48,218,255,.13),0 0 18px rgba(48,218,255,.12)}
+#auth-screen .button-primary{color:#061322;background:linear-gradient(100deg,#49e9ff,#9b78ff);box-shadow:0 8px 24px rgba(50,194,255,.2);font-weight:850}
+#auth-screen .button-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+#auth-screen .form-message{color:#ff9bb7}
+@keyframes cyber-scan{0%,15%{transform:translateX(-100%)}65%,100%{transform:translateX(100%)}}
+@media(max-width:900px){#auth-screen .welcome-panel{min-height:390px}}
+@media(max-width:560px){#auth-screen .welcome-panel{min-height:350px}#auth-screen .welcome-panel:after{top:8%;right:4%;font-size:25px}#auth-screen .auth-card{border-radius:19px}}
+
+
+/* COLOUR POP authentication redesign — overrides Cyber Future auth colours only. */
+body:has(#auth-screen:not(.hidden)){color:#39234b;background-color:#fff6fb;background-image:radial-gradient(circle at 12% 18%,rgba(255,111,177,.28),transparent 30%),radial-gradient(circle at 88% 22%,rgba(126,116,255,.22),transparent 31%),radial-gradient(circle at 72% 88%,rgba(255,195,91,.24),transparent 30%),linear-gradient(135deg,#fff7fb,#f3efff 55%,#fff7e9);background-size:auto}
+body:has(#auth-screen:not(.hidden)) .topbar{border-color:rgba(210,125,190,.22);background:rgba(255,255,255,.78);backdrop-filter:blur(16px)}
+body:has(#auth-screen:not(.hidden)) .brand{color:#4b2864}
+body:has(#auth-screen:not(.hidden)) .brand b{color:#f05b9c}
+body:has(#auth-screen:not(.hidden)) .brand-mark{background:linear-gradient(135deg,#ff78b7,#9278ff);box-shadow:0 8px 22px rgba(240,91,156,.25)}
+body:has(#auth-screen:not(.hidden)) .status-pill{color:#8c4380;background:#fff0f8;border-color:#f6c8e1}
+#auth-screen .welcome-panel{isolation:isolate;min-height:510px;border:1px solid rgba(255,255,255,.8);border-radius:30px;background:radial-gradient(circle at 78% 18%,rgba(255,255,255,.65),transparent 25%),radial-gradient(circle at 15% 85%,rgba(255,255,255,.4),transparent 30%),linear-gradient(140deg,#ff8fbd 0%,#b29aff 52%,#78d9ec 100%);box-shadow:0 24px 65px rgba(171,103,169,.2),inset 0 1px 0 rgba(255,255,255,.8);color:#482b61}
+#auth-screen .welcome-panel:before{content:"";position:absolute;z-index:-1;inset:0;border-radius:inherit;background:radial-gradient(circle at 20% 30%,rgba(255,255,255,.3) 0 5%,transparent 5.5%),radial-gradient(circle at 82% 72%,rgba(255,255,255,.28) 0 7%,transparent 7.5%),linear-gradient(115deg,transparent 20%,rgba(255,255,255,.24) 48%,transparent 72%);background-size:150px 150px,190px 190px,auto;animation:colour-pop-float 12s ease-in-out infinite alternate}
+#auth-screen .welcome-panel:after{content:"✦  ♡  ✧  ◇  ✦";position:absolute;right:7%;top:12%;color:rgba(255,255,255,.9);font-size:clamp(28px,4vw,48px);letter-spacing:.18em;text-shadow:0 5px 18px rgba(140,75,150,.2);transform:rotate(-12deg);pointer-events:none}
+#auth-screen .eyebrow{color:#713d91}
+#auth-screen .welcome-panel h1,#auth-screen .welcome-panel p{color:#482b61}
+#auth-screen .welcome-panel h1 span{color:#fff;text-shadow:0 3px 14px rgba(129,75,151,.25)}
+#auth-screen .welcome-points span{border:1px solid rgba(255,255,255,.65);background:rgba(255,255,255,.42);color:#4b2b65;backdrop-filter:blur(10px)}
+#auth-screen .safety-note{border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.35);color:#56366a}
+#auth-screen .auth-card{align-self:center;border:1px solid rgba(255,255,255,.9);border-radius:27px;color:#49305d;background:rgba(255,255,255,.88);box-shadow:0 24px 70px rgba(157,105,164,.2),0 5px 18px rgba(255,130,180,.12);backdrop-filter:blur(18px)}
+#auth-screen .auth-tabs{background:#fff0f7;border:1px solid #f8d5e7}
+#auth-screen .auth-tab{color:#986b91}
+#auth-screen .auth-tab.active{color:#fff;background:linear-gradient(100deg,#f56fa9,#9b83f5);box-shadow:0 7px 18px rgba(221,105,174,.24)}
+#auth-screen .auth-card h2{color:#4b2d61}
+#auth-screen .auth-card .muted,#auth-screen .auth-card .tiny{color:#947b9d}
+#auth-screen label{color:#694a79}
+#auth-screen input{color:#49305d;background:#fffafd;border-color:#eed8ea}
+#auth-screen input::placeholder{color:#b39ab5}
+#auth-screen input:focus{border-color:#e978b0;box-shadow:0 0 0 3px rgba(239,116,174,.13),0 0 16px rgba(173,126,242,.12)}
+#auth-screen .button-primary{color:#fff;background:linear-gradient(100deg,#f56fa9,#a084f5 58%,#69cfe1);box-shadow:0 9px 23px rgba(208,107,177,.24);font-weight:850}
+#auth-screen .button-primary:hover{filter:brightness(1.04);transform:translateY(-1px)}
+#auth-screen .form-message{color:#d84e83}
+@keyframes colour-pop-float{from{transform:translateY(-5px) scale(1)}to{transform:translateY(5px) scale(1.015)}}
+@media(max-width:900px){#auth-screen .welcome-panel{min-height:390px}}
+@media(max-width:560px){#auth-screen .welcome-panel{min-height:350px;border-radius:23px}#auth-screen .welcome-panel:after{top:8%;right:4%;font-size:25px}#auth-screen .auth-card{border-radius:21px}}
+
+/* Password recovery controls */
+.auth-text-button{justify-self:center;padding:5px 8px;border:0;background:transparent;color:#a14bc0;font-size:13px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.auth-text-button:hover{color:#e34f9d}
+#auth-screen .auth-text-button{color:#b85bba}
+#auth-screen .auth-text-button:hover{color:#e34f9d}
+#auth-screen .success-message{color:#23865f}
+#recovery-form{display:grid;gap:10px}
+#recovery-form.hidden{display:none!important}
