@@ -41,21 +41,93 @@
       APPWRITE_PROJECT_ID.trim() !== "" && DATABASE_ID.trim() !== "";
   }
 
+  let legacyProfile = {};
+
+  function profileStorageKey(userId) {
+    return `genzTeenChatProfileV2:${userId}`;
+  }
+
   function loadLocalData() {
     try {
       const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      profile = { ...profile, ...(parsed.profile || {}) };
+      legacyProfile = parsed.profile || {};
       localData = { ...localData, ...(parsed.data || {}) };
     } catch (error) {
       console.warn("Could not load local preferences", error);
     }
   }
 
+  function loadAccountProfile(user) {
+    const defaults = {
+      name: (user.name || user.email?.split("@")[0] || "Friend").slice(0, 30),
+      bio: "", photo: "", photoFileId: "",
+      usernameColour: "#7657f6", textColour: "#211b3a",
+      accentColour: "#7657f6", appearance: "classic",
+      bubbleMine: "#e8ddff", bubbleOther: "#f0ebff", effects: []
+    };
+    try {
+      const saved = localStorage.getItem(profileStorageKey(user.$id));
+      if (saved) {
+        profile = { ...defaults, ...JSON.parse(saved) };
+      } else {
+        const migrated = localStorage.getItem("genzTeenChatProfileV2MigrationDone");
+        profile = { ...defaults, ...(!migrated ? legacyProfile : {}) };
+        localStorage.setItem(profileStorageKey(user.$id), JSON.stringify(profile));
+        if (!migrated) localStorage.setItem("genzTeenChatProfileV2MigrationDone", "yes");
+      }
+    } catch (error) {
+      profile = defaults;
+      console.warn("Could not load this account's profile preferences", error);
+    }
+  }
+
   function saveLocalData() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ profile, data: localData }));
+      localStorage.setItem(storageKey, JSON.stringify({ data: localData }));
+      if (currentUser?.$id) {
+        localStorage.setItem(profileStorageKey(currentUser.$id), JSON.stringify(profile));
+      } else {
+        localStorage.setItem(storageKey, JSON.stringify({ profile, data: localData }));
+      }
     } catch (error) {
       console.warn("Could not save local preferences", error);
+    }
+  }
+
+  async function loadCloudProfile() {
+    if (!currentUser) return;
+    try {
+      const row = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: "profiles", rowId: currentUser.$id });
+      profile.name = row.displayName || profile.name;
+      profile.bio = row.bio || "";
+      profile.photoFileId = row.avatarFileId || "";
+      profile.photo = profile.photoFileId ? fileViewUrl(profile.photoFileId) : "";
+      saveLocalData();
+      renderProfile();
+    } catch (error) {
+      console.info("No cloud profile row found yet; keeping this device's profile.", error?.message || "");
+    }
+  }
+
+  async function saveCloudProfile() {
+    if (!currentUser) return;
+    const data = {
+      userId: currentUser.$id,
+      displayName: (profile.name || displayName()).slice(0, 30),
+      bio: (profile.bio || "").slice(0, 120),
+      ...(profile.photoFileId ? { avatarFileId: profile.photoFileId } : {})
+    };
+    const permissions = [
+      Appwrite.Permission.read(Appwrite.Role.users()),
+      Appwrite.Permission.update(Appwrite.Role.user(currentUser.$id)),
+      Appwrite.Permission.delete(Appwrite.Role.user(currentUser.$id))
+    ];
+    try {
+      await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: "profiles", rowId: currentUser.$id });
+      await tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: "profiles", rowId: currentUser.$id, data });
+    } catch (error) {
+      if (error?.code !== 404 && !String(error?.message || "").toLowerCase().includes("not found")) throw error;
+      await tablesDB.createRow({ databaseId: DATABASE_ID, tableId: "profiles", rowId: currentUser.$id, data, permissions });
     }
   }
 
@@ -321,11 +393,12 @@
 
   function showWorkspace(user) {
     currentUser = user;
-    if (!profile.name) profile.name = (user.name || user.email?.split("@")[0] || "Friend").slice(0, 30);
+    loadAccountProfile(user);
     $("#auth-screen").classList.add("hidden");
     $("#chat-app").classList.remove("hidden");
     $("#signout-button").classList.remove("hidden");
     renderProfile();
+    loadCloudProfile();
     renderFriends();
     renderNotifications();
     renderBlocked();
@@ -599,8 +672,17 @@
     saveLocalData();
     renderProfile();
     $("#profile-dialog").close();
-    addNotification("Your profile changes were saved on this device.");
-    showToast("Profile saved on this device.");
+    try {
+      await saveCloudProfile();
+      saveLocalData();
+      renderProfile();
+      addNotification("Your profile and picture were saved to your account.");
+      showToast("Profile saved to your account.");
+    } catch (error) {
+      console.error("Cloud profile save failed:", error);
+      addNotification("Profile saved on this device; account sync needs Appwrite profiles-table permissions.");
+      showToast("Saved on this device, but account sync failed. Check the profiles table permissions.");
+    }
   }
 
   const chatBackgroundThemes = ["original", "aurora", "ocean", "sunset", "lavender", "sakura", "galaxy", "neon-city", "candy", "forest", "beach", "midnight", "pastel", "rainbow", "marble", "pixel"];
