@@ -65,3 +65,37 @@ input,textarea,select{width:100%;min-width:0;padding:12px 13px;color:var(--text)
 .profile-photo-preview{min-height:70px;display:grid;place-items:center;padding:10px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12px;text-align:center}
 .profile-photo-preview img{width:88px;height:88px;object-fit:cover;border-radius:50%}
 @media(max-width:560px){.chat-message .message-content{max-width:calc(100% - 54px)}}
+
+/* GENZ TEEN CHAT — expanded profile themes and visual effects */
+.profile-preview,.profile-mini{position:relative;overflow:hidden;transition:background .25s ease,border-radius .25s ease,box-shadow .25s ease}
+.profile-preview.theme-pink-paradise,.profile-mini.theme-pink-paradise{background:linear-gradient(135deg,#ff8fbd,#ffd1e5 55%,#fff0f7);--profile-accent:#ec4899;--username-colour:#9d174d;--profile-text:#831843}
+.profile-preview.theme-golden-hour,.profile-mini.theme-golden-hour{background:linear-gradient(135deg,#14213d,#fca311);--profile-accent:#fca311;--username-colour:#ffd166;--profile-text:#fff8e7}
+.profile-preview.theme-tropical-vibe,.profile-mini.theme-tropical-vibe{background:linear-gradient(135deg,#00bfa6,#b2ff59);--profile-accent:#00a896;--username-colour:#00695c;--profile-text:#064e3b}
+.profile-preview.theme-galaxy-dream,.profile-mini.theme-galaxy-dream{background:linear-gradient(135deg,#160b38,#54218c,#171a55);--profile-accent:#c084fc;--username-colour:#f0abfc;--profile-text:#f5eaff}
+.profile-preview.theme-sakura-bloom,.profile-mini.theme-sakura-bloom{background:linear-gradient(135deg,#fce4ec,#f8bbd0,#fff8fb);--profile-accent:#ec407a;--username-colour:#ad1457;--profile-text:#880e4f}
+.profile-preview.theme-cyber-pulse,.profile-mini.theme-cyber-pulse{background:linear-gradient(135deg,#101827,#123c55,#173c8c);--profile-accent:#22d3ee;--username-colour:#67e8f9;--profile-text:#e0faff}
+.profile-preview.theme-sunset-rush,.profile-mini.theme-sunset-rush{background:linear-gradient(135deg,#ff512f,#f09819,#ff6b81);--profile-accent:#ff7043;--username-colour:#fff7ed;--profile-text:#571b16}
+.profile-preview.theme-nature-fresh,.profile-mini.theme-nature-fresh{background:linear-gradient(135deg,#dce775,#81c784,#2e7d32);--profile-accent:#558b2f;--username-colour:#1b5e20;--profile-text:#173b20}
+.profile-preview.theme-midnight-luxe,.profile-mini.theme-midnight-luxe{background:linear-gradient(135deg,#101014,#34313c);--profile-accent:#d4af37;--username-colour:#f5d76e;--profile-text:#f8f4e8}
+.profile-preview.theme-arctic-wave,.profile-mini.theme-arctic-wave{background:linear-gradient(135deg,#e0f7fa,#80deea,#bbdefb);--profile-accent:#039be5;--username-colour:#01579b;--profile-text:#083344}
+.profile-preview.theme-candy-pop,.profile-mini.theme-candy-pop{background:linear-gradient(135deg,#ce93d8,#f8bbd0,#90caf9);--profile-accent:#ab47bc;--username-colour:#6a1b9a;--profile-text:#4a148c}
+.profile-preview.theme-coffee-mood,.profile-mini.theme-coffee-mood{background:linear-gradient(135deg,#4e342e,#a1887f,#efebe9);--profile-accent:#8d6e63;--username-colour:#fff3e0;--profile-text:#3e2723}
+.profile-preview.theme-cosmic-blue,.profile-mini.theme-cosmic-blue{background:linear-gradient(135deg,#1a237e,#3949ab,#7e57c2);--profile-accent:#7986cb;--username-colour:#fff176;--profile-text:#f3f4ff}
+.profile-preview.theme-emerald-glow,.profile-mini.theme-emerald-glow{background:linear-gradient(135deg,#004d40,#00897b,#a7ffeb);--profile-accent:#26a69a;--username-colour:#e0f2f1;--profile-text:#003d35}
+.profile-preview.theme-bubblegum,.profile-mini.theme-bubblegum{background:linear-gradient(135deg,#f9a8d4,#fbcfe8,#ddd6fe);--profile-accent:#ec4899;--username-colour:#831843;--profile-text:#701a75}
+.profile-preview.theme-rounded,.profile-mini.theme-rounded{border-radius:28px}.profile-preview.theme-glass,.profile-mini.theme-glass{backdrop-filter:blur(12px);background:color-mix(in srgb,var(--profile-accent) 18%,transparent)}.profile-preview.theme-neon,.profile-mini.theme-neon{box-shadow:0 0 9px var(--profile-accent),0 0 22px color-mix(in srgb,var(--profile-accent) 45%,transparent)}
+.profile-mini strong,.profile-preview strong{color:var(--username-colour,var(--profile-accent,#7657f6))!important}
+.profile-mini.effect-glowing-username strong,.profile-preview.effect-glowing-username strong{text-shadow:0 0 7px var(--profile-accent),0 0 16px var(--profile-accent)}
+.profile-mini.effect-custom-border,.profile-preview.effect-custom-border{border:3px solid var(--profile-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--profile-accent) 20%,transparent)}
+.profile-mini.effect-decorative-frame::after,.profile-preview.effect-decorative-frame::after{content:"✦　✧　✦";position:absolute;right:10px;bottom:5px;color:var(--profile-accent);font-size:13px;letter-spacing:3px;pointer-events:none}
+.profile-mini.effect-animated-background::before,.profile-preview.effect-animated-background::before{content:"";position:absolute;inset:-80%;background:conic-gradient(from 0deg,transparent,var(--profile-accent),transparent 35%);opacity:.18;animation:genz-spin 12s linear infinite;pointer-events:none}
+.profile-mini.effect-moving-gradient,.profile-preview.effect-moving-gradient{background-size:250% 250%;animation:genz-gradient 7s ease infinite}
+@keyframes genz-spin{to{transform:rotate(360deg)}}@keyframes genz-gradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.chat-message.mine .message-content{background:var(--bubble-mine,#e8ddff)!important;color:#24183e}
+.chat-message.theirs .message-content{background:var(--bubble-other,#f0ebff)!important}
+.effect-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}.effect-options label{display:flex;align-items:center;gap:8px;margin:0;padding:9px;border:1px solid var(--line);border-radius:10px;font-weight:600}.effect-options input{width:auto;margin:0;accent-color:var(--primary)}
+#profile-bubble-mine,#profile-bubble-other{height:42px;padding:5px;cursor:pointer}
+#chat-feed.effect-animated-background{background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 5%,transparent),transparent,color-mix(in srgb,var(--primary) 10%,transparent));background-size:200% 200%;animation:genz-gradient 12s ease infinite;border-radius:14px}
+#chat-feed.effect-moving-gradient{background:linear-gradient(110deg,transparent,color-mix(in srgb,var(--primary) 9%,transparent),transparent);background-size:250% 250%;animation:genz-gradient 8s ease infinite}
+@media(max-width:560px){.effect-options{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.profile-mini.effect-animated-background::before,.profile-preview.effect-animated-background::before,.profile-mini.effect-moving-gradient,.profile-preview.effect-moving-gradient,#chat-feed.effect-animated-background,#chat-feed.effect-moving-gradient{animation:none!important}}

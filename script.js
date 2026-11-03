@@ -21,7 +21,7 @@
   const storageKey = "genzTeenChatLocalV1";
   let authMode = "login";
   let currentUser = null;
-  let profile = { name: "", bio: "", photo: "", photoFileId: "", usernameColour: "#7657f6", textColour: "#211b3a", accentColour: "#7657f6", appearance: "classic" };
+  let profile = { name: "", bio: "", photo: "", photoFileId: "", usernameColour: "#7657f6", textColour: "#211b3a", accentColour: "#7657f6", appearance: "classic", bubbleMine: "#e8ddff", bubbleOther: "#f0ebff", effects: [] };
   let localData = { friends: [], notifications: [], blocked: [], reports: [] };
   let toastTimeout;
   let realtimeUnsubscribe = null;
@@ -210,7 +210,10 @@
     preview.style.setProperty("--username-colour", $("#username-colour").value);
     preview.style.setProperty("--profile-text", $("#profile-text-colour").value);
     preview.style.setProperty("--profile-accent", $("#profile-accent").value);
-    preview.className = "profile-preview " + $("#profile-appearance").value;
+    preview.className = "profile-preview theme-" + $("#profile-appearance").value;
+    $$('[data-profile-effect]:checked').forEach(input => preview.classList.add("effect-" + input.dataset.profileEffect));
+    preview.style.setProperty("--bubble-mine", $("#profile-bubble-mine").value);
+    preview.style.setProperty("--profile-accent", $("#profile-accent").value);
     $("#preview-name").textContent = $("#profile-name-input").value.trim() || "Your username";
     $("#preview-text").textContent = $("#profile-bio-input").value.trim() || "This is your profile preview.";
   }
@@ -219,17 +222,27 @@
     const name = $("#profile-display-name");
     if (name) name.style.color = profile.usernameColour || "";
     const mini = document.querySelector(".profile-mini");
+    const themeNames = ["classic","rounded","glass","gradient","neon","pink-paradise","golden-hour","tropical-vibe","galaxy-dream","sakura-bloom","cyber-pulse","sunset-rush","nature-fresh","midnight-luxe","arctic-wave","candy-pop","coffee-mood","cosmic-blue","emerald-glow","bubblegum"];
     if (mini) {
-      mini.classList.remove("classic", "rounded", "glass", "gradient", "neon");
-      mini.classList.add(profile.appearance || "classic");
+      mini.classList.remove(...themeNames.map(x => "theme-" + x), "effect-animated-background", "effect-glowing-username", "effect-custom-border", "effect-decorative-frame", "effect-moving-gradient");
+      mini.classList.add("theme-" + (themeNames.includes(profile.appearance) ? profile.appearance : "classic"));
+      (profile.effects || []).forEach(effect => mini.classList.add("effect-" + effect));
       mini.style.setProperty("--profile-accent", profile.accentColour || "#7657f6");
       mini.style.setProperty("--profile-text", profile.textColour || "#211b3a");
+      mini.style.setProperty("--username-colour", profile.usernameColour || "#7657f6");
     }
     const avatar = $("#profile-avatar");
     if (avatar) {
       avatar.style.borderColor = profile.accentColour || "";
       avatar.style.borderWidth = "2px";
       avatar.style.borderStyle = "solid";
+    }
+    document.documentElement.style.setProperty("--bubble-mine", profile.bubbleMine || "#e8ddff");
+    document.documentElement.style.setProperty("--bubble-other", profile.bubbleOther || "#f0ebff");
+    const feed = $("#chat-feed");
+    if (feed) {
+      feed.classList.remove("effect-animated-background", "effect-moving-gradient");
+      (profile.effects || []).filter(x => ["animated-background", "moving-gradient"].includes(x)).forEach(x => feed.classList.add("effect-" + x));
     }
   }
 
@@ -400,7 +413,7 @@
       const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const mine = currentUser && row.userId === currentUser.$id;
       const avatarUrl = row.avatarFileId ? fileViewUrl(row.avatarFileId) : "";
-      return `<article class="chat-message ${mine ? "mine" : "theirs"}" data-message-id="${escapeHTML(row.$id || "")}">
+      return `<article class="chat-message ${mine ? "mine" : "theirs"}" ${mine ? `style="--bubble-mine:${escapeHTML(profile.bubbleMine || "#e8ddff")}"` : ""} data-message-id="${escapeHTML(row.$id || "")}">
         <div class="message-avatar">${avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="${escapeHTML(sender)} profile picture">` : escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
         <div class="message-content">
           <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
@@ -586,6 +599,9 @@
     profile.textColour = $("#profile-text-colour").value;
     profile.accentColour = $("#profile-accent").value;
     profile.appearance = $("#profile-appearance").value;
+    profile.bubbleMine = $("#profile-bubble-mine").value;
+    profile.bubbleOther = $("#profile-bubble-other").value;
+    profile.effects = $$('[data-profile-effect]:checked').map(input => input.dataset.profileEffect);
     saveLocalData();
     renderProfile();
     $("#profile-dialog").close();
@@ -652,6 +668,9 @@
       $("#profile-text-colour").value = profile.textColour || "#211b3a";
       $("#profile-accent").value = profile.accentColour || "#7657f6";
       $("#profile-appearance").value = profile.appearance || "classic";
+      $("#profile-bubble-mine").value = profile.bubbleMine || "#e8ddff";
+      $("#profile-bubble-other").value = profile.bubbleOther || "#f0ebff";
+      $$('[data-profile-effect]').forEach(input => { input.checked = (profile.effects || []).includes(input.dataset.profileEffect); });
       updateProfilePreview();
       $("#profile-dialog").showModal();
     });
@@ -668,7 +687,8 @@
       reader.readAsDataURL(file);
     });
     $("#profile-form").addEventListener("submit", saveProfile);
-    ["#username-colour", "#profile-text-colour", "#profile-accent", "#profile-appearance", "#profile-name-input", "#profile-bio-input"].forEach(selector => $(selector).addEventListener("input", updateProfilePreview));
+    ["#username-colour", "#profile-text-colour", "#profile-accent", "#profile-appearance", "#profile-name-input", "#profile-bio-input", "#profile-bubble-mine", "#profile-bubble-other"].forEach(selector => $(selector).addEventListener("input", updateProfilePreview));
+    $$('[data-profile-effect]').forEach(input => input.addEventListener("change", updateProfilePreview));
     $("#open-youtube").addEventListener("click", () => window.open("https://www.youtube.com/", "_blank", "noopener,noreferrer"));
     $("#share-youtube").addEventListener("click", () => {
       const field = $("#youtube-link");
