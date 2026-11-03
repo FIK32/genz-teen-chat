@@ -1,4 +1,4 @@
-GENZ TEEN CHAT — ALL-ORIGINAL PROFILE THEMES + EFFECTS UPDATE
+GENZ TEEN CHAT — ALL-ORIGINAL PROFILE THEMES + PUBLIC CHAT BACKGROUNDS
 
 FILES INCLUDED
 - index.html
@@ -28,6 +28,26 @@ The profile appearance selector now contains the original five themes plus 15 ad
 18. Cosmic Blue
 19. Emerald Glow
 20. Bubblegum
+
+PUBLIC CHAT BACKGROUND THEMES
+A new Public chat background selector adds 15 backgrounds, in addition to the Original option:
+1. Aurora Lights
+2. Ocean Waves
+3. Sunset Glow
+4. Lavender Fields
+5. Sakura Garden
+6. Deep Galaxy
+7. Neon City
+8. Candy Clouds
+9. Enchanted Forest
+10. Tropical Beach
+11. Midnight Stars
+12. Pastel Dream
+13. Rainbow Flow
+14. Rose Marble
+15. Pixel Arcade
+
+The selected public-chat background is saved in local storage on that device/browser. It does not change other members' chat backgrounds.
 
 EXTRA EFFECTS
 - Animated profile backgrounds
@@ -62,3 +82,11 @@ IMPORTANT LIMITATIONS / SETUP
 - YouTube embeds may be unavailable for videos whose owners disable embedding. The app embeds YouTube's player; it does not download or copy the video file.
 - Do not put an Appwrite API key in frontend JavaScript.
 - Test with two accounts before inviting other people. Check moderation, blocking, reporting, privacy and permissions first.
+
+
+PUBLIC CHAT MESSAGE DESIGN UPDATE
+- Public chat messages now use compact, rounded WhatsApp-inspired bubbles.
+- Your messages remain on the right; other members' messages remain on the left.
+- Message-level Report and Delete buttons have been removed from the public message display.
+- The separate Safety Centre/reporting options and account-level blocking/reporting features elsewhere in the app are unchanged.
+- This is a visual layout change; it does not alter Appwrite message records or permissions.

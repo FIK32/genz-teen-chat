@@ -418,12 +418,6 @@
         <div class="message-content">
           <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
           <p class="message-text">${messageHtmlWithYoutube(text)}</p>
-          <div class="message-tools">
-            <button type="button" data-react="💙" aria-label="React with heart">💙 React</button>
-            <button type="button" data-react="😂" aria-label="React with laughing face">😂 React</button>
-            <button type="button" data-report-message="${escapeHTML(sender)}" data-report-user-id="${escapeHTML(row.userId || "")}">🚩 Report</button>
-            ${mine ? `<button type="button" data-delete-message="${escapeHTML(row.$id || "")}">Delete</button>` : `<button type="button" data-block-message="${escapeHTML(sender)}" data-block-user-id="${escapeHTML(row.userId || "")}">Block</button>`}
-          </div>
         </div>
       </article>`;
     }).join("");
@@ -609,6 +603,19 @@
     showToast("Profile saved on this device.");
   }
 
+  const chatBackgroundThemes = ["original", "aurora", "ocean", "sunset", "lavender", "sakura", "galaxy", "neon-city", "candy", "forest", "beach", "midnight", "pastel", "rainbow", "marble", "pixel"];
+
+  function applyChatBackground(theme) {
+    const feed = $("#chat-feed");
+    const picker = $("#chat-background-theme");
+    if (!feed) return;
+    const safeTheme = chatBackgroundThemes.includes(theme) ? theme : "original";
+    feed.classList.remove(...chatBackgroundThemes.filter(x => x !== "original").map(x => "chat-bg-" + x));
+    if (safeTheme !== "original") feed.classList.add("chat-bg-" + safeTheme);
+    if (picker) picker.value = safeTheme;
+    try { localStorage.setItem("genzPublicChatBackground", safeTheme); } catch (_) {}
+  }
+
   function setTheme(dark) {
     document.body.classList.toggle("dark", dark);
     $("#theme-toggle").textContent = dark ? "☀️" : "🌙";
@@ -634,6 +641,7 @@
     });
     $("#message-input").addEventListener("input", () => $("#char-count").textContent = `${$("#message-input").value.length} / 1000`);
     $("#refresh-chat").addEventListener("click", loadPublicMessages);
+    $("#chat-background-theme").addEventListener("change", (event) => applyChatBackground(event.target.value));
     $("#emoji-toggle").addEventListener("click", () => $("#emoji-picker").classList.toggle("hidden"));
     $$("#emoji-picker button").forEach((button) => button.addEventListener("click", () => {
       const input = $("#message-input");
@@ -744,7 +752,8 @@
     bindEvents();
     try {
       setTheme(localStorage.getItem("genzTeenChatTheme") === "dark");
-    } catch (_) {}
+      applyChatBackground(localStorage.getItem("genzPublicChatBackground") || "original");
+    } catch (_) { applyChatBackground("original"); }
     if (!configured()) {
       setConnectionStatus("Add project details");
       $("#auth-message").textContent = "Before signing in, add your Project ID and Database ID in script.js.";
