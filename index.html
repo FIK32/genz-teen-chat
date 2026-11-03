@@ -20,6 +20,11 @@
       </a>
       <div class="top-actions">
         <span id="connection-status" class="status-pill">Not connected</span>
+        <nav class="quick-nav" aria-label="Quick navigation">
+          <button class="quick-nav-item" data-view="private" type="button" aria-label="Private chat" title="Private chat"><span aria-hidden="true">✉️</span><span class="quick-nav-label">Private chat</span></button>
+          <button class="quick-nav-item" data-view="notifications" type="button" aria-label="Notifications" title="Notifications"><span aria-hidden="true">🔔</span><span class="quick-nav-label">Notifications</span><span id="notification-count" class="nav-count">0</span></button>
+          <button class="quick-nav-item" data-view="friends" type="button" aria-label="Friend requests and friends" title="Friend requests and friends"><span aria-hidden="true">👥</span><span class="quick-nav-label">Friends</span><span id="friend-count" class="nav-count">0</span></button>
+        </nav>
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch theme" title="Switch theme">🌙</button>
         <button id="signout-button" class="button button-quiet hidden" type="button">Sign out</button>
       </div>
@@ -67,9 +72,6 @@
           <nav class="nav-menu" aria-label="Main menu">
             <button class="nav-item active" data-view="public" type="button"><span>💬</span> Public chat</button>
             <button class="nav-item" data-view="online" type="button"><span>🟢</span> Online users <span id="online-count" class="nav-count">0</span></button>
-            <button class="nav-item" data-view="friends" type="button"><span>👥</span> Friends <span id="friend-count" class="nav-count">0</span></button>
-            <button class="nav-item" data-view="private" type="button"><span>✉️</span> Private messages</button>
-            <button class="nav-item" data-view="notifications" type="button"><span>🔔</span> Notifications <span id="notification-count" class="nav-count">0</span></button>
             <button class="nav-item" data-view="safety" type="button"><span>🛡️</span> Safety centre</button>
           </nav>
           <div class="sidebar-bottom">
