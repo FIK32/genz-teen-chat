@@ -705,15 +705,16 @@
     }
   }
 
-  const chatBackgroundThemes = ["original", "aurora", "ocean", "sunset", "lavender", "sakura", "galaxy", "neon-city", "candy", "forest", "beach", "midnight", "pastel", "rainbow", "marble", "pixel"];
+  const chatBackgroundThemes = ["neon-dreams","holographic-love","royal-gold","liquid-chrome","cyber-neon","cotton-candy","bubble-pop","electric-sunset","cosmic-glitter","geometry-rush","digital-waves","butterfly-glow","street-vibes","heartbeat","future-vision"];
+  const previousChatBackgroundThemes = ["aurora","ocean","sunset","lavender","sakura","galaxy","neon-city","candy","forest","beach","midnight","pastel","rainbow","marble","pixel"];
 
   function applyChatBackground(theme) {
     const feed = $("#chat-feed");
     const picker = $("#chat-background-theme");
     if (!feed) return;
-    const safeTheme = chatBackgroundThemes.includes(theme) ? theme : "original";
-    feed.classList.remove(...chatBackgroundThemes.filter(x => x !== "original").map(x => "chat-bg-" + x));
-    if (safeTheme !== "original") feed.classList.add("chat-bg-" + safeTheme);
+    const safeTheme = chatBackgroundThemes.includes(theme) ? theme : "neon-dreams";
+    feed.classList.remove(...[...chatBackgroundThemes, ...previousChatBackgroundThemes].map(x => "chat-bg-" + x));
+    feed.classList.add("chat-bg-" + safeTheme);
     if (picker) picker.value = safeTheme;
     try { localStorage.setItem("genzPublicChatBackground", safeTheme); } catch (_) {}
   }
@@ -854,8 +855,8 @@
     bindEvents();
     try {
       setTheme(localStorage.getItem("genzTeenChatTheme") === "dark");
-      applyChatBackground(localStorage.getItem("genzPublicChatBackground") || "original");
-    } catch (_) { applyChatBackground("original"); }
+      applyChatBackground(localStorage.getItem("genzPublicChatBackground") || "neon-dreams");
+    } catch (_) { applyChatBackground("neon-dreams"); }
     if (!configured()) {
       setConnectionStatus("Add project details");
       $("#auth-message").textContent = "Before signing in, add your Project ID and Database ID in script.js.";

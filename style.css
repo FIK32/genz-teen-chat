@@ -100,28 +100,27 @@ input,textarea,select{width:100%;min-width:0;padding:12px 13px;color:var(--text)
 @media(max-width:560px){.effect-options{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.profile-mini.effect-animated-background::before,.profile-preview.effect-animated-background::before,.profile-mini.effect-moving-gradient,.profile-preview.effect-moving-gradient,#chat-feed.effect-animated-background,#chat-feed.effect-moving-gradient{animation:none!important}}
 
-/* Public chat background themes — independent from profile themes */
+/* Unique abstract public chat backgrounds — replaces the previous public-chat collection. */
 .chat-background-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);gap:6px 12px;align-items:center;margin:12px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
-.chat-background-tools label{margin:0}.chat-background-tools p{grid-column:1/-1;margin:0}.chat-feed{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);background-size:cover;background-position:center;transition:background .25s ease}
-.chat-feed.chat-bg-aurora{background-image:radial-gradient(ellipse at 15% 15%,rgba(81,255,202,.34),transparent 45%),radial-gradient(ellipse at 85% 75%,rgba(128,99,255,.34),transparent 45%),linear-gradient(135deg,#102d3b,#182447 55%,#30204b)}
-.chat-feed.chat-bg-ocean{background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,.35),transparent 35%),linear-gradient(145deg,#b8f1f2,#65bde0 48%,#24618f)}
-.chat-feed.chat-bg-sunset{background-image:linear-gradient(135deg,#ffd2a6,#ff9b91 48%,#9c5caa)}
-.chat-feed.chat-bg-lavender{background-image:radial-gradient(circle at 80% 20%,rgba(255,255,255,.75),transparent 35%),linear-gradient(135deg,#f1e5ff,#c9b4f4 55%,#a7b8ef)}
-.chat-feed.chat-bg-sakura{background-image:radial-gradient(circle at 20% 15%,rgba(255,255,255,.8),transparent 28%),linear-gradient(135deg,#fff0f5,#f7bfd4 55%,#e8c8f8)}
-.chat-feed.chat-bg-galaxy{background-image:radial-gradient(circle at 18% 20%,#fff 0 1px,transparent 2px),radial-gradient(circle at 75% 35%,#fff 0 1px,transparent 2px),radial-gradient(ellipse at 60% 80%,rgba(117,72,201,.55),transparent 45%),linear-gradient(135deg,#090d2c,#24134a 55%,#111d48);background-size:38px 38px,53px 53px,auto,auto}
-.chat-feed.chat-bg-neon-city{background-image:linear-gradient(120deg,rgba(255,0,170,.18),transparent 40%),linear-gradient(240deg,rgba(0,229,255,.2),transparent 45%),linear-gradient(135deg,#101326,#20213d)}
-.chat-feed.chat-bg-candy{background-image:radial-gradient(circle at 10% 20%,rgba(255,255,255,.65),transparent 24%),linear-gradient(135deg,#ffd6e8,#d9d0ff 52%,#c9f2ff)}
-.chat-feed.chat-bg-forest{background-image:radial-gradient(ellipse at 15% 15%,rgba(186,255,171,.28),transparent 42%),linear-gradient(135deg,#d8edc8,#9ac79a 48%,#477d69)}
-.chat-feed.chat-bg-beach{background-image:linear-gradient(180deg,#bcecff 0%,#d9f6f2 48%,#f7dfb3 49%,#f4c98f 100%)}
-.chat-feed.chat-bg-midnight{background-image:radial-gradient(circle at 12% 22%,#fff 0 1px,transparent 2px),radial-gradient(circle at 82% 62%,#fff 0 1px,transparent 2px),linear-gradient(135deg,#10172f,#18294a);background-size:47px 47px,61px 61px,auto}
-.chat-feed.chat-bg-pastel{background-image:linear-gradient(120deg,#ffe1e8,#e5e0ff 48%,#d9f7f1)}
-.chat-feed.chat-bg-rainbow{background-image:linear-gradient(115deg,rgba(255,117,166,.34),rgba(255,205,117,.34),rgba(116,226,197,.34),rgba(126,168,255,.34),rgba(202,144,255,.34))}
-.chat-feed.chat-bg-marble{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.5) 0 2px,transparent 2px 18px),linear-gradient(135deg,#f8e5e8,#e8d5e8 50%,#f7e9ed)}
-.chat-feed.chat-bg-pixel{background-image:linear-gradient(90deg,rgba(80,255,200,.09) 1px,transparent 1px),linear-gradient(rgba(80,255,200,.09) 1px,transparent 1px),linear-gradient(135deg,#152b3c,#20264b);background-size:18px 18px,18px 18px,auto}
-.chat-feed.chat-bg-aurora .chat-message .message-content,.chat-feed.chat-bg-galaxy .chat-message .message-content,.chat-feed.chat-bg-neon-city .chat-message .message-content,.chat-feed.chat-bg-midnight .chat-message .message-content,.chat-feed.chat-bg-pixel .chat-message .message-content{background:rgba(255,255,255,.91);color:#211b3a}
-.chat-feed.chat-bg-ocean .chat-message .message-content,.chat-feed.chat-bg-sunset .chat-message .message-content,.chat-feed.chat-bg-lavender .chat-message .message-content,.chat-feed.chat-bg-sakura .chat-message .message-content,.chat-feed.chat-bg-candy .chat-message .message-content,.chat-feed.chat-bg-forest .chat-message .message-content,.chat-feed.chat-bg-beach .chat-message .message-content,.chat-feed.chat-bg-pastel .chat-message .message-content,.chat-feed.chat-bg-rainbow .chat-message .message-content,.chat-feed.chat-bg-marble .chat-message .message-content{background:rgba(255,255,255,.82);color:#211b3a}
+.chat-background-tools label{margin:0}.chat-background-tools p{grid-column:1/-1;margin:0}
+.chat-feed{padding:14px;border:1px solid var(--line);border-radius:16px;background-size:cover;background-position:center;transition:background .25s ease}
+.chat-feed.chat-bg-neon-dreams{background-image:radial-gradient(circle at 15% 20%,#ff52c8 0,transparent 34%),radial-gradient(circle at 85% 75%,#37d9ff 0,transparent 38%),linear-gradient(135deg,#211044,#101c48 55%,#43144d)}
+.chat-feed.chat-bg-holographic-love{background-image:radial-gradient(ellipse at 20% 20%,rgba(255,255,255,.8),transparent 35%),linear-gradient(125deg,#ffb6e6,#c8b5ff 35%,#9be9f5 68%,#ffe0b5)}
+.chat-feed.chat-bg-royal-gold{background-image:radial-gradient(ellipse at 75% 25%,rgba(255,214,112,.35),transparent 35%),repeating-linear-gradient(135deg,rgba(255,220,130,.07) 0 2px,transparent 2px 20px),linear-gradient(135deg,#100d18,#39251d 55%,#090812)}
+.chat-feed.chat-bg-liquid-chrome{background-image:radial-gradient(ellipse at 25% 25%,#f9d4ff,transparent 32%),radial-gradient(ellipse at 80% 70%,#8be8ff,transparent 35%),linear-gradient(135deg,#4d426e,#b8b8d5 45%,#443b63)}
+.chat-feed.chat-bg-cyber-neon{background-image:linear-gradient(115deg,rgba(255,0,170,.35),transparent 45%),linear-gradient(245deg,rgba(0,240,255,.3),transparent 48%),linear-gradient(135deg,#090d24,#25113f 60%,#081e32)}
+.chat-feed.chat-bg-cotton-candy{background-image:radial-gradient(circle at 15% 25%,rgba(255,255,255,.7),transparent 25%),radial-gradient(circle at 80% 75%,rgba(255,255,255,.5),transparent 28%),linear-gradient(135deg,#ffb7d9,#c7b5ff 55%,#a8eaff)}
+.chat-feed.chat-bg-bubble-pop{background-image:radial-gradient(circle at 18% 25%,rgba(255,255,255,.7) 0 5%,transparent 5.5%),radial-gradient(circle at 68% 30%,rgba(255,255,255,.45) 0 8%,transparent 8.5%),radial-gradient(circle at 80% 80%,rgba(255,255,255,.5) 0 6%,transparent 6.5%),linear-gradient(135deg,#ff79bb,#8c7bff 55%,#46d8ed)}
+.chat-feed.chat-bg-electric-sunset{background-image:radial-gradient(ellipse at 70% 20%,rgba(255,238,120,.65),transparent 35%),linear-gradient(145deg,#ff4d82,#ff8a52 48%,#7d3ca5)}
+.chat-feed.chat-bg-cosmic-glitter{background-image:radial-gradient(circle at 15% 22%,#fff 0 1px,transparent 2px),radial-gradient(circle at 78% 42%,#ffd8ff 0 1px,transparent 2px),radial-gradient(ellipse at 65% 75%,rgba(185,93,255,.5),transparent 45%),linear-gradient(135deg,#100b35,#32145e 55%,#111b49);background-size:37px 37px,51px 51px,auto,auto}
+.chat-feed.chat-bg-geometry-rush{background-image:linear-gradient(45deg,transparent 46%,rgba(255,255,255,.2) 47% 53%,transparent 54%),linear-gradient(135deg,#ff648c,#f5b64d 35%,#5a8cff 68%,#a35cff);background-size:42px 42px,auto}
+.chat-feed.chat-bg-digital-waves{background-image:repeating-radial-gradient(ellipse at 10% 110%,transparent 0 12px,rgba(255,255,255,.16) 13px 15px,transparent 16px 28px),linear-gradient(135deg,#17104d,#5532a8 52%,#087e9d)}
+.chat-feed.chat-bg-butterfly-glow{background-image:radial-gradient(ellipse at 25% 25%,rgba(255,255,255,.55),transparent 28%),radial-gradient(ellipse at 75% 70%,rgba(255,105,205,.45),transparent 32%),linear-gradient(135deg,#33205e,#a34eaa 55%,#263d82)}
+.chat-feed.chat-bg-street-vibes{background-image:linear-gradient(120deg,rgba(255,0,170,.22),transparent 40%),linear-gradient(240deg,rgba(0,229,255,.2),transparent 45%),repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 3px,transparent 3px 24px),linear-gradient(135deg,#171326,#27203d)}
+.chat-feed.chat-bg-heartbeat{background-image:radial-gradient(ellipse at 25% 25%,rgba(255,105,160,.55),transparent 38%),radial-gradient(ellipse at 80% 75%,rgba(255,50,120,.45),transparent 35%),linear-gradient(135deg,#32102f,#7b174e 55%,#281044)}
+.chat-feed.chat-bg-future-vision{background-image:linear-gradient(120deg,rgba(0,245,255,.22),transparent 42%),linear-gradient(240deg,rgba(203,90,255,.25),transparent 45%),repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),linear-gradient(135deg,#101b3e,#28205b 55%,#103b58)}
+.chat-feed .chat-message .message-content{background:rgba(255,255,255,.9)!important;color:#211b3a!important}
 @media(max-width:560px){.chat-background-tools{grid-template-columns:1fr}.chat-background-tools p{grid-column:auto}}
-
 
 /* WhatsApp-inspired public chat bubbles: rounded, compact, and action-free. */
 .chat-feed{display:flex;flex-direction:column;gap:8px;padding:16px 12px}
@@ -153,3 +152,5 @@ body.dark .chat-message.mine .message-meta strong{color:#b6f0c8}
 .chat-message .message-content.has-youtube .youtube-embed{display:block;width:100%;max-width:100%;aspect-ratio:16/9}
 .chat-message .message-content.has-youtube .youtube-embed iframe{position:absolute;inset:0;width:100%;height:100%;min-height:100%;display:block}
 @media(max-width:560px){.chat-message .message-content.has-youtube{width:calc(100vw - 76px);max-width:calc(100vw - 76px);flex-basis:calc(100vw - 76px)}}
+
+.chat-message .message-content.has-youtube .youtube-embed{position:relative;overflow:hidden}
