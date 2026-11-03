@@ -333,11 +333,29 @@
   }
 
   function messageHtmlWithYoutube(text) {
-    const escaped = escapeHTML(text);
-    return escaped.replace(/\[\[YOUTUBE:([A-Za-z0-9_-]{11})\]\]/g, (_match, videoId) => {
-      const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
-      return `<div class="youtube-embed"><iframe src="${embedUrl}" title="YouTube video shared in public chat" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+    // Convert both the app's [[YOUTUBE:videoId]] marker and ordinary YouTube URLs
+    // into real embedded players. Escape all remaining user text before inserting HTML.
+    const players = [];
+    const source = String(text || "");
+    const youtubePattern = /\[\[YOUTUBE:([A-Za-z0-9_-]{11})\]\]|https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?[^\s<>]+|embed\/[A-Za-z0-9_-]{11}[^\s<>]*|shorts\/[A-Za-z0-9_-]{11}[^\s<>]*|live\/[A-Za-z0-9_-]{11}[^\s<>]*)|youtu\.be\/[A-Za-z0-9_-]{11}[^\s<>]*)/gi;
+    const withPlaceholders = source.replace(youtubePattern, (match, markerId) => {
+      let videoId = markerId || "";
+      let trailing = "";
+      if (!videoId) {
+        // Remove sentence punctuation that is not part of the URL.
+        const cleaned = match.replace(/[),.!?;:]+$/g, (p) => { trailing = p + trailing; return ""; });
+        videoId = youtubeVideoId(cleaned);
+      }
+      if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return match;
+      const index = players.length;
+      players.push(`<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video shared in public chat" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>${trailing}`);
+      return `GENZYOUTUBEPLAYER${index}END`;
     });
+    let safe = escapeHTML(withPlaceholders).replace(/\n/g, "<br>");
+    players.forEach((player, index) => {
+      safe = safe.replace(`GENZYOUTUBEPLAYER${index}END`, player);
+    });
+    return safe;
   }
 
   async function heartbeatOnline() {
@@ -490,7 +508,7 @@
         <div class="message-avatar">${avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="${escapeHTML(sender)} profile picture">` : escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
         <div class="message-content">
           <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
-          <p class="message-text">${messageHtmlWithYoutube(text)}</p>
+          <div class="message-text">${messageHtmlWithYoutube(text)}</div>
         </div>
       </article>`;
     }).join("");
