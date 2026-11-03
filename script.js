@@ -504,11 +504,13 @@
       const time = date && !Number.isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const mine = currentUser && row.userId === currentUser.$id;
       const avatarUrl = row.avatarFileId ? fileViewUrl(row.avatarFileId) : "";
+      const renderedMessage = messageHtmlWithYoutube(text);
+      const hasYoutube = renderedMessage.includes('class="youtube-embed"');
       return `<article class="chat-message ${mine ? "mine" : "theirs"}" ${mine ? `style="--bubble-mine:${escapeHTML(profile.bubbleMine || "#e8ddff")}"` : ""} data-message-id="${escapeHTML(row.$id || "")}">
         <div class="message-avatar">${avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="${escapeHTML(sender)} profile picture">` : escapeHTML(sender.trim().slice(0,1).toUpperCase() || "G")}</div>
-        <div class="message-content">
+        <div class="message-content ${hasYoutube ? "has-youtube" : ""}">
           <div class="message-meta"><strong>${escapeHTML(sender)}${mine ? " (you)" : ""}</strong><span class="message-time">${escapeHTML(time)}</span></div>
-          <div class="message-text">${messageHtmlWithYoutube(text)}</div>
+          <div class="message-text">${renderedMessage}</div>
         </div>
       </article>`;
     }).join("");
