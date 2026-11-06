@@ -242,3 +242,6 @@ body:has(#auth-screen:not(.hidden)) .status-pill{color:#8c4380;background:#fff0f
 .private-message-text{overflow-wrap:anywhere}.private-message-text .chat-sticker{display:flex;width:max-content;max-width:100%}
 .private-composer{flex-wrap:wrap}.private-composer input{flex:1;min-width:120px}
 @media(max-width:560px){.emoji-choice{width:36px;height:36px}.sticker-picker{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Moderation dashboard and persistent notification states */
+.moderation-report{margin:12px 0}.moderation-report p{overflow-wrap:anywhere}.moderation-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.moderation-report blockquote{margin:10px 0;padding:10px 12px;border-left:3px solid var(--primary);background:var(--soft);border-radius:8px}.notification-unread{border-left:3px solid var(--primary);background:var(--soft)}.notification-read{opacity:.82}.moderation-report code{overflow-wrap:anywhere}

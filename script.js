@@ -29,6 +29,8 @@
   let realtimeUnsubscribe = null;
   let appwriteReady = false;
   let activePrivateUserId = "";
+  let currentRole = "user";
+  let cloudNotifications = [];
 
   const client = new Appwrite.Client();
   client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
@@ -249,7 +251,7 @@
     if (!id || id === currentUser?.$id) return showToast("Choose another member to report.");
     try {
       await callPrivateApi({ action: "report", reportedUserId: id, reason });
-      showToast("Report submitted. A moderator dashboard still needs to be set up.");
+      showToast("Report submitted to the moderation queue.");
       addNotification("Your safety report was submitted.");
     } catch (error) { showToast(error.message || "Could not submit the report."); }
   }
@@ -442,6 +444,8 @@
     if (configured()) {
       loadPublicMessages();
       subscribeRealtime();
+      loadCloudNotifications();
+      loadModerationAccess();
       heartbeatOnline();
       loadOnlineUsers();
       if (window.genzOnlineTimer) clearInterval(window.genzOnlineTimer);
@@ -591,6 +595,11 @@
     showToast("You have signed out.");
   }
 
+  function scrollPublicToBottom() {
+    const feed = $("#chat-feed");
+    if (feed) feed.scrollTo({ top: feed.scrollHeight, behavior: "smooth" });
+  }
+
   function renderMessages(rows) {
     const feed = $("#chat-feed");
     const blocked = new Set(localData.blocked.map((n) => n.toLowerCase()));
@@ -616,6 +625,7 @@
         </div>
       </article>`;
     }).join("");
+    requestAnimationFrame(scrollPublicToBottom);
   }
 
   async function loadPublicMessages() {
@@ -646,16 +656,11 @@
     const button = $("#message-form button[type='submit']");
     button.disabled = true;
     try {
-      await tablesDB.createRow({
-        databaseId: DATABASE_ID,
-        tableId: MESSAGES_TABLE_ID,
-        rowId: Appwrite.ID.unique(),
-        data: {
-          senderName: displayName(),
-          messageText,
-          userId: currentUser.$id,
-          ...(profile.photoFileId ? { avatarFileId: profile.photoFileId } : {})
-        }
+      await callPrivateApi({
+        action: "public_send",
+        senderName: displayName(),
+        messageText,
+        ...(profile.photoFileId ? { avatarFileId: profile.photoFileId } : {})
       });
       input.value = "";
       $("#char-count").textContent = "0 / 1000";
@@ -704,15 +709,71 @@
     target.innerHTML = localData.friends.map((friend, index) => `<div class="simple-row"><div class="message-avatar">${escapeHTML(friend.name.slice(0,1).toUpperCase())}</div><div class="row-copy"><strong>${escapeHTML(friend.name)}</strong><small>Saved on this device</small></div><button type="button" data-remove-friend="${index}">Remove</button></div>`).join("");
   }
 
+  async function loadCloudNotifications() {
+    if (!currentUser) return;
+    try {
+      const result = await callPrivateApi({ action: "notifications_list" });
+      cloudNotifications = Array.isArray(result.notifications) ? result.notifications : [];
+      renderNotifications();
+    } catch (error) { console.warn("Could not load account notifications:", error.message); }
+  }
+
   function renderNotifications() {
-    const items = localData.notifications || [];
-    $("#notification-count").textContent = String(items.length);
+    const localItems = (localData.notifications || []).map(item => ({ $id: item.id, title: item.text, message: "", createdAt: item.time, isRead: true }));
+    const items = [...cloudNotifications, ...localItems].sort((a,b) => new Date(b.createdAt || b.time || 0) - new Date(a.createdAt || a.time || 0));
+    const unread = cloudNotifications.filter(item => !item.isRead).length;
+    $("#notification-count").textContent = String(unread + localItems.length);
     const target = $("#notifications-list");
     if (!items.length) {
-      target.innerHTML = `<div class="empty-state">You're all caught up. New local alerts will appear here.</div>`;
+      target.innerHTML = `<div class="empty-state">You're all caught up. New account notifications will appear here.</div>`;
       return;
     }
-    target.innerHTML = items.map((item) => `<div class="simple-row"><div class="message-avatar">🔔</div><div class="row-copy"><strong>${escapeHTML(item.text)}</strong><small>${escapeHTML(new Date(item.time).toLocaleString())}</small></div></div>`).join("");
+    target.innerHTML = items.map(item => `<div class="simple-row ${item.isRead ? "notification-read" : "notification-unread"}" ${item.$id && !item.isRead ? `data-notification-id="${escapeHTML(item.$id)}"` : ""}><div class="message-avatar">🔔</div><div class="row-copy"><strong>${escapeHTML(item.title || item.message || "Notification")}</strong><small>${escapeHTML(new Date(item.createdAt || item.time).toLocaleString())}${item.isRead ? " · Read" : " · New — click to mark read"}</small></div></div>`).join("");
+  }
+
+  async function loadModerationAccess() {
+    if (!currentUser) return;
+    try {
+      const result = await callPrivateApi({ action: "whoami" });
+      currentRole = result.role || "user";
+      const link = $("#moderator-nav");
+      if (link) link.classList.toggle("hidden", !["creator_admin", "senior_admin", "moderator"].includes(currentRole));
+      const roleLabel = $("#moderator-role-label");
+      if (roleLabel) roleLabel.textContent = currentRole.replaceAll("_", " ").toUpperCase();
+    } catch (error) { console.warn("Could not verify moderation role:", error.message); }
+  }
+
+  async function loadModeratorDashboard() {
+    const target = $("#moderator-dashboard-content");
+    if (!target) return;
+    target.innerHTML = `<div class="empty-state">Loading moderation queue…</div>`;
+    try {
+      const data = await callPrivateApi({ action: "moderator_dashboard" });
+      const reports = data.reports || [];
+      const canBan = ["creator_admin", "senior_admin"].includes(data.role);
+      target.innerHTML = `<div class="notice-card">Role: <strong>${escapeHTML(data.role.replaceAll("_", " "))}</strong>. Private conversations are not shown here. Only message evidence voluntarily attached to a report may appear.</div>
+        <h3>Open reports (${reports.length})</h3>
+        ${reports.length ? reports.map(report => `<article class="safety-card moderation-report"><p><strong>Reported user:</strong> <code>${escapeHTML(report.reportedUserId)}</code></p><p><strong>Reason:</strong> ${escapeHTML(report.reason)}</p>${report.submittedMessage ? `<blockquote>${escapeHTML(report.submittedMessage)}</blockquote>` : ""}<small>Submitted ${escapeHTML(new Date(report.createdAt).toLocaleString())}</small><div class="moderation-actions"><button class="button button-quiet" data-mod-action="warning" data-target="${escapeHTML(report.reportedUserId)}">Issue warning</button>${canBan ? `<button class="button button-quiet" data-mod-action="temporary_ban" data-target="${escapeHTML(report.reportedUserId)}">Temporary ban</button>` : ""}${report.messageId ? `<button class="button button-quiet" data-mod-action="message_removal" data-target="${escapeHTML(report.reportedUserId)}" data-message="${escapeHTML(report.messageId)}">Remove public message</button>` : ""}</div></article>`).join("") : `<div class="empty-state">No reports have been submitted.</div>`}
+        ${data.role === "creator_admin" ? `<section class="safety-card"><h3>Administrator roles</h3><p>Only Creator Admin can appoint or remove administrators.</p><form id="assign-admin-form" class="stack-form"><input id="admin-target-id" placeholder="Member Appwrite User ID" required><select id="admin-role-choice"><option value="moderator">Moderator</option><option value="senior_admin">Senior Admin</option></select><button class="button button-primary" type="submit">Appoint administrator</button></form><form id="remove-admin-form" class="stack-form"><input id="remove-admin-id" placeholder="Administrator User ID" required><button class="button button-quiet" type="submit">Remove administrator role</button></form></section>` : ""}`;
+      const assign = $("#assign-admin-form");
+      if (assign) assign.addEventListener("submit", async event => { event.preventDefault(); try { await callPrivateApi({ action:"assign_role", targetUserId:$("#admin-target-id").value.trim(), role:$("#admin-role-choice").value }); showToast("Administrator role assigned."); assign.reset(); } catch(error) { showToast(error.message); } });
+      const remove = $("#remove-admin-form");
+      if (remove) remove.addEventListener("submit", async event => { event.preventDefault(); try { await callPrivateApi({ action:"remove_role", targetUserId:$("#remove-admin-id").value.trim() }); showToast("Administrator role removed."); remove.reset(); } catch(error) { showToast(error.message); } });
+    } catch (error) { target.innerHTML = `<div class="empty-state">${escapeHTML(error.message || "Moderator access is not available.")}</div>`; }
+  }
+
+  async function performModeration(action, targetUserId, messageId = "") {
+    const reason = prompt("Enter a clear reason for this moderation action:");
+    if (!reason || !reason.trim()) return;
+    const payload = { action:"moderate", actionType:action, targetUserId, reason:reason.trim() };
+    if (messageId) payload.messageId = messageId;
+    if (action === "temporary_ban") {
+      const hours = Number(prompt("How many hours? Enter 1 to 720 (maximum 30 days):", "24"));
+      if (!Number.isFinite(hours) || hours < 1 || hours > 720) return showToast("Enter a duration from 1 to 720 hours.");
+      payload.durationHours = hours;
+    }
+    try { await callPrivateApi(payload); showToast("Moderation action completed."); await loadModeratorDashboard(); await loadCloudNotifications(); }
+    catch (error) { showToast(error.message || "Moderation action failed."); }
   }
 
   function renderBlocked() {
@@ -729,6 +790,8 @@
     $$(".view-panel").forEach((panel) => panel.classList.toggle("hidden", panel.id !== `view-${view}`));
     if (view === "public") loadPublicMessages();
     if (view === "online") loadOnlineUsers();
+    if (view === "notifications") loadCloudNotifications();
+    if (view === "moderator") loadModeratorDashboard();
   }
 
   function addFriend(event) {
@@ -763,7 +826,7 @@
       await callPrivateApi({ action: "report", reportedUserId: userId, reason: `${reason}${details ? `: ${details}` : ""}` });
       $("#report-form").reset();
       addNotification("Your safety report was submitted.");
-      showToast("Report submitted. A moderator dashboard still needs to be set up.");
+      showToast("Report submitted to the moderation queue.");
     } catch (error) { showToast(error.message || "Could not submit report."); }
   }
 
@@ -855,6 +918,7 @@
     });
     $("#message-input").addEventListener("input", () => $("#char-count").textContent = `${$("#message-input").value.length} / 1000`);
     $("#refresh-chat").addEventListener("click", loadPublicMessages);
+    $("#refresh-moderation").addEventListener("click", loadModeratorDashboard);
     $("#chat-background-theme").addEventListener("change", (event) => applyChatBackground(event.target.value));
     const insertAtCursor = (input, value) => {
       const start = input.selectionStart ?? input.value.length;
@@ -887,11 +951,24 @@
       $("#block-form").reset();
     });
     $("#report-form").addEventListener("submit", submitReport);
-    $("#clear-notifications").addEventListener("click", () => {
+    $("#clear-notifications").addEventListener("click", async () => {
       localData.notifications = [];
       saveLocalData();
+      for (const item of cloudNotifications.filter(item => !item.isRead)) {
+        try { await callPrivateApi({ action:"notification_read", notificationId:item.$id }); item.isRead = true; } catch (_) {}
+      }
       renderNotifications();
-      showToast("Local notifications cleared.");
+      showToast("Notifications marked as read.");
+    });
+    $("#notifications-list").addEventListener("click", async event => {
+      const row = event.target.closest("[data-notification-id]");
+      if (!row) return;
+      try { await callPrivateApi({ action:"notification_read", notificationId:row.dataset.notificationId }); await loadCloudNotifications(); }
+      catch (error) { showToast(error.message || "Could not update notification."); }
+    });
+    $("#moderator-dashboard-content").addEventListener("click", event => {
+      const button = event.target.closest("[data-mod-action]");
+      if (button) performModeration(button.dataset.modAction, button.dataset.target, button.dataset.message || "");
     });
     $("#edit-profile").addEventListener("click", () => {
       $("#profile-name-input").value = profile.name || displayName();

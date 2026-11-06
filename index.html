@@ -83,6 +83,7 @@
             <button class="nav-item active" data-view="public" type="button"><span>💬</span> Public chat</button>
             <button class="nav-item" data-view="online" type="button"><span>🟢</span> Online users <span id="online-count" class="nav-count">0</span></button>
             <button class="nav-item" data-view="safety" type="button"><span>🛡️</span> Safety centre</button>
+            <button class="nav-item hidden" id="moderator-nav" data-view="moderator" type="button"><span>🛡️</span> Moderator dashboard</button>
           </nav>
           <div class="sidebar-bottom">
             <div class="online-dot"></div><span>Make the chat kinder</span>
@@ -171,6 +172,11 @@
           <div class="view-panel hidden" id="view-notifications">
             <div class="panel-heading"><div><div class="eyebrow">UPDATES</div><h2>Notifications</h2><p class="muted">Messages and alerts for this browser.</p></div><button id="clear-notifications" class="button button-quiet" type="button">Clear</button></div>
             <div id="notifications-list" class="simple-list"></div>
+          </div>
+
+          <div class="view-panel hidden" id="view-moderator">
+            <div class="panel-heading"><div><div class="eyebrow">COMMUNITY SAFETY</div><h2>Moderator dashboard</h2><p class="muted">Review reports and take role-authorized action. Your role: <strong id="moderator-role-label">VERIFYING…</strong></p></div><button id="refresh-moderation" class="button button-quiet" type="button">↻ Refresh</button></div>
+            <div id="moderator-dashboard-content"><div class="empty-state">Checking administrator permissions…</div></div>
           </div>
 
           <div class="view-panel hidden" id="view-safety">
