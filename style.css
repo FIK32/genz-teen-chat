@@ -228,3 +228,17 @@ body:has(#auth-screen:not(.hidden)) .status-pill{color:#8c4380;background:#fff0f
 #auth-screen .success-message{color:#23865f}
 #recovery-form{display:grid;gap:10px}
 #recovery-form.hidden{display:none!important}
+
+/* Expanded emoji and sticker pickers for public and private conversations */
+.emoji-picker{max-height:190px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px}
+.emoji-picker.hidden,.sticker-picker.hidden{display:none!important}
+.emoji-choice{width:39px;height:39px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;font-size:23px;line-height:1}
+.emoji-choice:hover{background:var(--soft);transform:scale(1.08)}
+.sticker-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;max-height:220px;overflow-y:auto;margin:0 0 10px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
+.sticker-choice{display:flex;min-height:82px;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--text)}
+.sticker-choice>span{font-size:27px;line-height:1.2}.sticker-choice small{font-size:10px;color:var(--muted)}.sticker-choice:hover{border-color:var(--primary);transform:translateY(-2px)}
+.chat-sticker{display:inline-flex;min-width:88px;flex-direction:column;align-items:center;justify-content:center;gap:2px;margin:4px;padding:9px 12px;border:1px solid color-mix(in srgb,var(--primary) 22%,var(--line));border-radius:15px;background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 10%,var(--panel)),var(--panel));vertical-align:middle}
+.chat-sticker>span{font-size:34px;line-height:1.25}.chat-sticker small{font-size:10px;color:var(--muted);font-weight:700}
+.private-message-text{overflow-wrap:anywhere}.private-message-text .chat-sticker{display:flex;width:max-content;max-width:100%}
+.private-composer{flex-wrap:wrap}.private-composer input{flex:1;min-width:120px}
+@media(max-width:560px){.emoji-choice{width:36px;height:36px}.sticker-picker{grid-template-columns:repeat(3,minmax(0,1fr))}}

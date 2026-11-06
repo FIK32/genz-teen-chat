@@ -185,7 +185,7 @@
       const mine = message.senderId === currentUser?.$id;
       const when = message.sentAt ? new Date(message.sentAt) : null;
       const time = when && !Number.isNaN(when.getTime()) ? when.toLocaleString() : "";
-      return `<article class="private-message ${mine ? "mine" : "theirs"}"><div class="private-message-meta"><strong>${mine ? "You" : "Other member"}</strong><span>${escapeHTML(time)}</span></div><p>${escapeHTML(message.messageText || "")}</p></article>`;
+      return `<article class="private-message ${mine ? "mine" : "theirs"}"><div class="private-message-meta"><strong>${mine ? "You" : "Other member"}</strong><span>${escapeHTML(time)}</span></div><div class="private-message-text">${messageHtmlWithYoutube(message.messageText || "")}</div></article>`;
     }).join("");
     target.scrollTop = target.scrollHeight;
   }
@@ -353,10 +353,23 @@
       players.push(`<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video shared in public chat" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>${trailing}`);
       return `GENZYOUTUBEPLAYER${index}END`;
     });
-    let safe = escapeHTML(withPlaceholders).replace(/\n/g, "<br>");
-    players.forEach((player, index) => {
-      safe = safe.replace(`GENZYOUTUBEPLAYER${index}END`, player);
+    const stickerArt = {
+      party: ["🥳🎉", "Party time"], love: ["🥰💖", "Sending love"], laugh: ["😂🤣", "LOL"],
+      wow: ["🤯✨", "Mind blown"], hugs: ["🫂💗", "Big hugs"], cool: ["😎🔥", "Too cool"],
+      star: ["🌟⭐", "Shine bright"], heart: ["💖💝", "Big heart"], clap: ["👏🎊", "Well done"],
+      dance: ["💃🕺", "Dance break"], cute: ["🐻🧸", "So cute"], thanks: ["🙏💛", "Thank you"],
+      strong: ["💪🔥", "You got this"], sleep: ["😴🌙", "Good night"], sparkle: ["✨🦋", "Sparkle"]
+    };
+    const stickers = [];
+    const withStickers = withPlaceholders.replace(/\[\[STICKER:([a-z]+)\]\]/g, (match, id) => {
+      if (!stickerArt[id]) return match;
+      const index = stickers.length;
+      stickers.push(`<span class="chat-sticker" role="img" aria-label="${stickerArt[id][1]}"><span>${stickerArt[id][0]}</span><small>${stickerArt[id][1]}</small></span>`);
+      return `GENZSTICKER${index}END`;
     });
+    let safe = escapeHTML(withStickers).replace(/\n/g, "<br>");
+    players.forEach((player, index) => { safe = safe.replace(`GENZYOUTUBEPLAYER${index}END`, player); });
+    stickers.forEach((sticker, index) => { safe = safe.replace(`GENZSTICKER${index}END`, sticker); });
     return safe;
   }
 
@@ -843,16 +856,28 @@
     $("#message-input").addEventListener("input", () => $("#char-count").textContent = `${$("#message-input").value.length} / 1000`);
     $("#refresh-chat").addEventListener("click", loadPublicMessages);
     $("#chat-background-theme").addEventListener("change", (event) => applyChatBackground(event.target.value));
-    $("#emoji-toggle").addEventListener("click", () => $("#emoji-picker").classList.toggle("hidden"));
-    $$("#emoji-picker button").forEach((button) => button.addEventListener("click", () => {
-      const input = $("#message-input");
+    const insertAtCursor = (input, value) => {
       const start = input.selectionStart ?? input.value.length;
       const end = input.selectionEnd ?? input.value.length;
-      input.value = input.value.slice(0, start) + button.textContent + input.value.slice(end);
+      input.value = input.value.slice(0, start) + value + input.value.slice(end);
       input.focus();
-      input.setSelectionRange(start + button.textContent.length, start + button.textContent.length);
-      $("#char-count").textContent = `${input.value.length} / 1000`;
-    }));
+      const caret = start + value.length;
+      input.setSelectionRange(caret, caret);
+      if (input.id === "message-input") $("#char-count").textContent = `${input.value.length} / 1000`;
+    };
+    $("#emoji-toggle").addEventListener("click", () => { $("#sticker-picker").classList.add("hidden"); $("#emoji-picker").classList.toggle("hidden"); });
+    $("#sticker-toggle").addEventListener("click", () => { $("#emoji-picker").classList.add("hidden"); $("#sticker-picker").classList.toggle("hidden"); });
+    $("#private-emoji-toggle").addEventListener("click", () => { $("#private-sticker-picker").classList.add("hidden"); $("#private-emoji-picker").classList.toggle("hidden"); });
+    $("#private-sticker-toggle").addEventListener("click", () => { $("#private-emoji-picker").classList.add("hidden"); $("#private-sticker-picker").classList.toggle("hidden"); });
+    [["#emoji-picker", "#message-input"], ["#private-emoji-picker", "#private-message-input"]].forEach(([picker, inputSelector]) => {
+      $$(picker + " [data-emoji]").forEach(button => button.addEventListener("click", () => insertAtCursor($(inputSelector), button.dataset.emoji)));
+    });
+    [["#sticker-picker", "#message-input"], ["#private-sticker-picker", "#private-message-input"]].forEach(([picker, inputSelector]) => {
+      $$(picker + " [data-sticker]").forEach(button => button.addEventListener("click", () => {
+        insertAtCursor($(inputSelector), ` [[STICKER:${button.dataset.sticker}]] `);
+        $(picker).classList.add("hidden");
+      }));
+    });
     $$(".nav-item").forEach((item) => item.addEventListener("click", () => changeView(item.dataset.view)));
     $$("[data-view-jump]").forEach((button) => button.addEventListener("click", () => changeView(button.dataset.viewJump)));
     $("#friend-form").addEventListener("submit", addFriend);
