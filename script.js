@@ -14,7 +14,7 @@
   const APPWRITE_PROJECT_ID = "6ada4252003150fd4cdd";
   const DATABASE_ID = "genz-chat-db";
   const MESSAGES_TABLE_ID = "messages";
-  const PRIVATE_FUNCTION_URL = "https://starter-function-pw9b.nyc.appwrite.run";
+  const PRIVATE_FUNCTION_ID = "private-messaging-api";
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -37,6 +37,7 @@
   const account = new Appwrite.Account(client);
   const tablesDB = new Appwrite.TablesDB(client);
   const storage = new Appwrite.Storage(client);
+  const functions = new Appwrite.Functions(client);
   const PROFILE_BUCKET_ID = "genz-chat-media";
 
   function configured() {
@@ -161,19 +162,24 @@
 
   async function callPrivateApi(payload) {
     if (!currentUser) throw new Error("Sign in first.");
-    const token = await account.createJWT();
-    const response = await fetch(PRIVATE_FUNCTION_URL, {
+    // Use the authenticated Appwrite Web SDK instead of calling the function's
+    // generated domain directly. This avoids the browser CORS preflight failure
+    // and lets Appwrite attach the signed-in session to the execution.
+    const execution = await functions.createExecution({
+      functionId: PRIVATE_FUNCTION_ID,
+      body: JSON.stringify(payload),
+      async: false,
+      xpath: "/",
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Appwrite-User-JWT": token.jwt,
-        "X-Appwrite-Project": APPWRITE_PROJECT_ID
-      },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "application/json" }
     });
-    let result;
-    try { result = await response.json(); } catch (_) { result = {}; }
-    if (!response.ok || !result.ok) throw new Error(result.error || `Private messaging request failed (${response.status}).`);
+    let result = {};
+    try { result = JSON.parse(execution.responseBody || "{}"); } catch (_) {
+      throw new Error("The chat server returned an unreadable response. Check the Appwrite function execution.");
+    }
+    if (execution.status === "failed" || (execution.responseStatusCode && execution.responseStatusCode >= 400) || !result.ok) {
+      throw new Error(result.error || `Chat server request failed (${execution.responseStatusCode || execution.status}).`);
+    }
     return result;
   }
 
