@@ -1,17 +1,26 @@
-GENZ TEEN CHAT – PROFILE PERSISTENCE & FAVICON UPDATE
+GENZ TEEN CHAT — website update
 
-Files: index.html, script.js, style.css, favicon.svg, README.txt
+Files:
+- index.html
+- script.js
 
-Changes:
-- Profile preferences are saved under each signed-in Appwrite user ID in this browser, so another account does not inherit them. They remain after sign-out/sign-in on the same browser.
-- Profile picture file IDs, display name and bio are saved to the Appwrite `profiles` table so the picture can be restored across sign-ins and devices.
-- Added a colourful GENZ favicon.
+Installation:
+1. Back up your current website folder.
+2. Replace index.html and script.js with these two files.
+3. KEEP your existing style.css (the stylesheet you supplied). Do not replace it with an older stylesheet.
+4. Deploy the updated website to the same GitHub Pages repository.
+5. Deploy the separate Appwrite function TAR.GZ package using its README.
 
-APPWRITE REQUIREMENTS:
-The `profiles` table should contain userId (String 36 required), displayName (String 30 required), bio (String 120 optional), countryCode (String 10 optional), avatarFileId (String 36 optional). Enable Row Security. At table level, allow authenticated All Users to Read and Create. Do NOT grant All Users table-level Update or Delete. The code creates each row with public-to-authenticated Read and owner-only Update/Delete permissions.
+This site is configured for your existing Appwrite project:
+- Endpoint: https://nyc.cloud.appwrite.io/v1
+- Project ID: 6ada4252003150fd4cdd
+- Database: genz-chat-db
+- Public messages table: messages
+- Private messaging function: private-messaging-api
 
-The `genz-chat-media` bucket needs authenticated Create and Read permissions. Do not enable Guest/Any access.
+Public chat reads messages from the messages table and sends them through the function.
+Private chat sends and loads through the function.
 
-If profile row saving fails, local profile settings still persist in that browser and the app displays a sync warning. Visual theme preferences are browser-local and account-scoped; they are not synced to other devices because the existing profiles table has no theme columns.
+The private conversation field expects the other member's Appwrite User ID. The receiver must have an account in the same Appwrite project.
 
-INSTALL: Replace index.html, script.js and style.css in GitHub and ADD favicon.svg. Keep other project files.
+Do not put an Appwrite API key in this folder or in browser JavaScript.
